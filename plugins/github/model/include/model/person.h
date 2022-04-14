@@ -34,10 +34,6 @@ struct Person
   #pragma db null
   std::string company;
 
-  /*
-  #pragma db value_not_null inverse(reviewers)
-  std::vector<std::weak_ptr<Pull>> reviewedPulls;
-  */
 };
 } // model
 } // cc

@@ -34,12 +34,29 @@ public:
     std::shared_ptr<std::string> datadir_,
     const cc::webserver::ServerContext& context_);
 
+  void getPullList(
+    std::vector<Pull>& return_) override;
+  void getFileListForPull(
+    std::vector<PullFile>& return_,
+    std::int64_t pullNum) override;
+  void getLabelListForPull(
+    std::vector<Label>& return_,
+    std::int64_t pullNum) override;
+  void getReviewerListForPull(
+    std::vector<Person>& return_,
+    std::int64_t pullNum) override;
+
   void getContributorList(
     std::vector<Person>& return_) override;
-  /*void getPullList(
-    std::vector<model::Pull>& return_);
-  void getIssueList(
-    std::vector<model::Issue>& return_);*/
+  void getPullListForAuthor(
+    std::vector<Pull>& return_,
+    const std::string& user) override;
+  void getPullListForReviewer(
+    std::vector<Pull>& return_,
+    const std::string& user) override;
+
+  /*void getIssueList(
+    std::vector<Issue>& return_);*/
 
   void getGitHubString(std::string& str_);
 
