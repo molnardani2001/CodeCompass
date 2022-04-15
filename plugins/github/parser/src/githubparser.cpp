@@ -20,10 +20,13 @@
 #include <model/issue.h>
 #include <model/issue-odb.hxx>
 #include <model/pull.h>
+#include <model/pull-odb.hxx>
 #include <model/pullfile.h>
 #include <model/pullfile-odb.hxx>
 #include <model/review.h>
+#include <model/review-odb.hxx>
 #include <model/comment.h>
+#include <model/comment-odb.hxx>
 
 #include <util/logutil.h>
 #include <util/odbtransaction.h>
@@ -281,7 +284,7 @@ void GitHubParser::runClient()
             processNewUsers(reviewPtree, ctx, ssl_ctx, hostname);
 
             std::vector<model::Review> reviews = converter.ConvertPullReviews(reviewPtree, pull);
-            for (auto review : reviews)
+            for (const auto& review : reviews)
             {
               trans([&, this]{
                 _ctx.db->persist(review);

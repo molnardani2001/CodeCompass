@@ -1,5 +1,5 @@
-#ifndef CC_SERVICE_GITHUB_GITHUBSSERVICE_H
-#define CC_SERVICE_GITHUB_GITHUBSSERVICE_H
+#ifndef CC_SERVICE_GITHUB_GITHUBSERVICE_H
+#define CC_SERVICE_GITHUB_GITHUBSERVICE_H
 
 #include <memory>
 #include <vector>
@@ -7,8 +7,6 @@
 #include <boost/program_options/variables_map.hpp>
 
 #include <odb/database.hxx>
-#include <util/odbtransaction.h>
-#include <webserver/servercontext.h>
 
 #include <model/person.h>
 #include <model/person-odb.hxx>
@@ -16,6 +14,9 @@
 #include <model/pull-odb.hxx>
 #include <model/issue.h>
 #include <model/issue-odb.hxx>
+
+#include <util/odbtransaction.h>
+#include <webserver/servercontext.h>
 
 #include "GitHubService.h"
 

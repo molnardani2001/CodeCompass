@@ -14,8 +14,8 @@ add_custom_command(
     ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/github_constants.h
     ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/github_types.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/github_types.h
-    ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/githubservice.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/githubservice.h
+    ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/GitHubService.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/GitHubService.h
     ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp
     ${CMAKE_CURRENT_BINARY_DIR}/gen-js
   COMMAND

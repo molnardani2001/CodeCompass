@@ -148,8 +148,10 @@ void GitHubServiceHandler::getPullListForReviewer(
   std::vector<Pull>& return_,
   const std::string& user)
 {
-  _transaction([&, this]() {
-    odb::result<model::Pull> res (_db->query<model::Pull>());
+  _transaction([&, this](){
+    typedef odb::query<model::Pull> PullQuery;
+    odb::result<model::Pull> res (_db->query<model::Pull>(
+      PullQuery::user == user));
     for(auto iter = res.begin(); iter != res.end(); ++iter)
     {
       iter->user.load();
@@ -168,6 +170,8 @@ void GitHubServiceHandler::getPullListForReviewer(
       return_.emplace_back(p);
     }
   });
+  for (const auto& var : return_)
+    LOG(info) << var.number << "   " << var.user;
 }
 
 /*void GitHubServiceHandler::getIssueList(
