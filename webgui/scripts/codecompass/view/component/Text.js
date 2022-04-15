@@ -342,6 +342,14 @@ function (declare, domClass, dom, style, query, topic, ContentPane, Dialog,
       this.set('header', this._fileInfo);
 
       this._getSyntaxHighlight(this._fileInfo);
+
+      if (window.gtag) {
+        window.gtag('event', 'page_view', {
+          page_location: window.location.href,
+          page_path: window.location.pathname + window.location.hash,
+          page_title: urlFileInfo.path
+        });
+      }
     },
 
     /**
@@ -445,6 +453,22 @@ function (declare, domClass, dom, style, query, topic, ContentPane, Dialog,
         elementInfo : astNodeInfo
       });
 
+      //--- Update URL ---//
+
+      if (astNodeInfo)
+      {
+        var range = astNodeInfo.range.range;
+        var selection = [
+          range.startpos.line,
+          range.startpos.column,
+          range.endpos.line,
+          range.endpos.column];
+
+        urlHandler.setStateValue({
+          select : selection.join('|')
+        });
+      }
+
       //--- Highlighting the same occurrence of the selected entity ---//
 
       this._markUsages(pos, this._fileInfo);
@@ -460,6 +484,15 @@ function (declare, domClass, dom, style, query, topic, ContentPane, Dialog,
         var service = model.getLanguageService(this._fileInfo.type);
         astHelper.jumpToDef(astNodeInfo.id, service);
       }
+
+      if (window.gtag) {
+        window.gtag('event', 'click_on_word', {
+          'event_category' : urlHandler.getState('wsid'),
+          'event_label' : urlHandler.getFileInfo().name
+                        + ': '
+                        + this._getWordAt(pos).string
+        });
+      }
     },
 
     /**
@@ -473,8 +506,9 @@ function (declare, domClass, dom, style, query, topic, ContentPane, Dialog,
       if (!astNodeInfo)
         return;
 
-      var refTypes = model.cppservice.getReferenceTypes(astNodeInfo.id);
-      var usages = model.cppservice.getReferences(
+      var service = model.getLanguageService(fileInfo.type);
+      var refTypes = service.getReferenceTypes(astNodeInfo.id);
+      var usages = service.getReferences(
         astNodeInfo.id,
         refTypes['Usage']);
 
