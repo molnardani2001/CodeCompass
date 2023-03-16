@@ -176,7 +176,7 @@ void CsharpServiceHandler::getFileDiagram(
 
   switch (diagramId_){
     case 999:
-      diagram.getTestDiagram(graph, fileId_);
+      //diagram.getTestDiagram(graph, fileId_);
       break;
   }
 

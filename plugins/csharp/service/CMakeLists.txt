@@ -39,6 +39,7 @@ add_subdirectory(src_csharp)
 
 add_library(csharpservice SHARED
   src/csharpservice.cpp
+  src/csharpfilediagram.cpp
   src/plugin.cpp)
 
 target_compile_options(csharpservice PUBLIC -Wno-unknown-pragmas)

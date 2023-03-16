@@ -6,6 +6,9 @@
 #include <util/dbutil.h>
 #include <util/legendbuilder.h>
 
+#include <model/file.h>
+#include <model/file-odb.hxx>
+
 #include "csharpfilediagram.h"
 
 
