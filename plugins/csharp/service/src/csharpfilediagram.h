@@ -23,92 +23,92 @@ public:
     std::shared_ptr<odb::database> db_,
     std::shared_ptr<std::string> datadir_,
     const cc::webserver::ServerContext& context_);
-
+  
   /**
    * This diagram shows the module which directory depends on. The "depends on"
    * diagram on module A traverses the subdirectories of module A and shows all
    * directories that contain files that any of the source files in A includes.
    */
-  void getExternalDependencyDiagram(
-    util::Graph& graph_,
-    const core::FileId& fileId_);
+  //void getExternalDependencyDiagram(
+  //  util::Graph& graph_,
+  //  const core::FileId& fileId_);
 
   /**
    * This function creates legend for the External dependency diagram.
    * @return The generated legend as a string in SVG format.
    */
-  std::string getExternalDependencyDiagramLegend();
+  //std::string getExternalDependencyDiagramLegend();
 
   /**
    * This diagram shows directories (modules) that are users of the
    * queried module.
    */
-  void getExternalUsersDiagram(
-    util::Graph& graph_,
-    const core::FileId& fileId_);
+  //void getExternalUsersDiagram(
+  //  util::Graph& graph_,
+  //  const core::FileId& fileId_);
 
   /**
    * This function creates legend for the External users diagram.
    * @return The generated legend as a string in SVG format.
    */
-  std::string getExternalUsersDiagramLegend();
+  //std::string getExternalUsersDiagramLegend();
 
   /**
    * This diagram shows of the `#include` file dependencies.
    */
-  void getIncludeDependencyDiagram(
-    util::Graph& graph_,
-    const core::FileId& fileId_);
+  //void getIncludeDependencyDiagram(
+  //  util::Graph& graph_,
+  //  const core::FileId& fileId_);
 
   /**
    * This function creates legend for the Include dependency diagram.
    * @return The generated legend as a string in SVG format.
    */
-  std::string getIncludeDependencyDiagramLegend();
+  //std::string getIncludeDependencyDiagramLegend();
 
   /**
    * Interface diagram shows the used and provided interfaces of a source code
    * file and shows linking information.
    */
-  void getInterfaceDiagram(
-    util::Graph& graph_,
-    const core::FileId& fileId_);
+  //void getInterfaceDiagram(
+  //  util::Graph& graph_,
+  //  const core::FileId& fileId_);
 
   /**
    * This function creates legend for the Interface diagram.
    * @return The generated legend as a string in SVG format.
    */
-  std::string getInterfaceDiagramLegend();
+  //std::string getInterfaceDiagramLegend();
 
   /**
    * This diagram shows the directories relationship between the subdirectories
    * of the queried module. This diagram is useful to understand the
    * relationships of the subdirectories (submodules) of a module.
    */
-  void getSubsystemDependencyDiagram(
-    util::Graph& graph_,
-    const core::FileId& fileId_);
+  //void getSubsystemDependencyDiagram(
+  //   util::Graph& graph_,
+  //  const core::FileId& fileId_);
 
   /**
    * This function creates legend for the Subsystem dependency diagram.
    * @return The generated legend as a string in SVG format.
    */
-  std::string getSubsystemDependencyDiagramLegend();
+  //std::string getSubsystemDependencyDiagramLegend();
 
   /**
    * Component users diagram for source file S shows which source files depend
    * on S through the interfaces S provides.
    */
-  void getComponentUsersDiagram(
-    util::Graph& graph_,
-    const core::FileId& fileId_);
+  //void getComponentUsersDiagram(
+  //  util::Graph& graph_,
+  //  const core::FileId& fileId_);
 
   /**
    * This function creates legend for the Component users diagram.
    * @return The generated legend as a string in SVG format.
    */
-  std::string getComponentUsersDiagramLegend();
-
+  //std::string getComponentUsersDiagramLegend();
+  
   void getTestDiagram(
     util::Graph& graph_,
     const core::FileId& fileId_);
@@ -158,9 +158,9 @@ private:
    * includes.
    * @see getIncludedFiles()
    */
-  std::vector<util::Graph::Node> getIncludes(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getIncludes(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
    * This function creates graph nodes for each files which includes the given
@@ -168,9 +168,9 @@ private:
    * @note This function is the revert version of the getIncludes function.
    * @see getIncludedFiles()
    */
-  std::vector<util::Graph::Node> getRevIncludes(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getRevIncludes(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
    * This function returns the graph nodes which the given file includes.
@@ -180,11 +180,11 @@ private:
    * includes the given file.
    * @return Created graph nodes.
    */
-  std::vector<util::Graph::Node> getIncludedFiles(
+  /*std::vector<util::Graph::Node> getIncludedFiles(
     util::Graph& graph_,
     const util::Graph::Node& fileNode_,
     bool reverse_ = false);
-
+  */
   /**
    * This function creates graph nodes for sub directories of the actual file
    * node and returns the created graph nodes.
@@ -192,18 +192,18 @@ private:
    * @param fileNode_ Graph file node object which represents a file object.
    * @return Subdirectory graph nodes.
    */
-  std::vector<util::Graph::Node> getSubDirs(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getSubDirs(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
    * This function creates graph nodes for each files which files implements
    * the given one.
    * @see getImplementedFiles()
    */
-  std::vector<util::Graph::Node> getImplements(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getImplements(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
    * This function creates graph nodes for each files which implements the given
@@ -211,9 +211,9 @@ private:
    * @note This function is the revert version of the getImplements function.
    * @see getImplementedFiles()
    */
-  std::vector<util::Graph::Node> getRevImplements(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getRevImplements(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
     * This function creates graph nodes for each files which implements the
@@ -226,27 +226,27 @@ private:
     * implements the given file.
     * @return Created graph nodes.
     */
-  std::vector<util::Graph::Node> getImplementedFiles(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_,
-    bool reverse_ = false);
+  //std::vector<util::Graph::Node> getImplementedFiles(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_,
+  //  bool reverse_ = false);
 
   /**
    * This function returns graph nodes which the given file depends on.
    * @see getDependFiles()
    */
-  std::vector<util::Graph::Node> getDepends(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getDepends(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
    * This function returns graph nodes which depends from the given file.
    * @note This function is the revert version of the getImplements function.
    * @see getDependFiles()
    */
-  std::vector<util::Graph::Node> getRevDepends(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getRevDepends(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
    * This function returns graph nodes which the given file depends on.
@@ -264,19 +264,19 @@ private:
    * depends the given file.
    * @return Created graph nodes.
    */
-  std::vector<util::Graph::Node> getDependFiles(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_,
-    bool reverse_ = false);
+  //std::vector<util::Graph::Node> getDependFiles(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_,
+  //  bool reverse_ = false);
 
   /**
    * This function creates graph nodes for each files which files provides
    * the given one.
    * @see getProvidedFiles()
    */
-  std::vector<util::Graph::Node> getProvides(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getProvides(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
    * This function creates graph nodes for each files which provides the given
@@ -284,9 +284,9 @@ private:
    * @note This function is the revert version of the getProvides function.
    * @see getProvidedFiles()
    */
-  std::vector<util::Graph::Node> getRevProvides(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getRevProvides(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
    * This function creates graph nodes for each files which provides the
@@ -299,15 +299,15 @@ private:
    * provides the given file.
    * @return Created graph nodes.
    */
-  std::vector<util::Graph::Node> getProvidedFiles(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_,
-    bool reverse_ = false);
+  //std::vector<util::Graph::Node> getProvidedFiles(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_,
+  //  bool reverse_ = false);
 
-  std::vector<core::FileId> getProvidedFileIds(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_,
-    bool reverse_ = false);
+  //std::vector<core::FileId> getProvidedFileIds(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_,
+   // bool reverse_ = false);
 
   /**
    * This function creates graph nodes for each build sources which related to
@@ -316,9 +316,9 @@ private:
    * @param fileNode_ Graph file node object which represents a file object.
    * @return Created graph nodes.
    */
-  std::vector<util::Graph::Node> getContains(
-    util::Graph& graph_,
-    const util::Graph::Node& fileNode_);
+  //std::vector<util::Graph::Node> getContains(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& fileNode_);
 
   /**
    * This function creates graph nodes for each build targets which related to
@@ -327,27 +327,27 @@ private:
    * @param fileNode_ Graph file node object which represents a file object.
    * @return Created graph nodes.
    */
-  std::vector<util::Graph::Node> getRevContains(
-    util::Graph& graph_,
-    const util::Graph::Node& node_);
+  //std::vector<util::Graph::Node> getRevContains(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& node_);
 
   /**
    * This function creates graph nodes for each files which files use the
    * given one.
    * @see getUsedFiles()
    */
-  std::vector<util::Graph::Node> getUsages(
-    util::Graph& graph_,
-    const util::Graph::Node& node_);
+  //std::vector<util::Graph::Node> getUsages(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& node_);
 
   /**
    * This function creates graph nodes for each files which use the given file.
    * @note This function is the revert version of the getUsages function.
    * @see getUsedFiles()
    */
-  std::vector<util::Graph::Node> getRevUsages(
-    util::Graph& graph_,
-    const util::Graph::Node& node_);
+  //std::vector<util::Graph::Node> getRevUsages(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& node_);
 
   /**
    * This function returns graph nodes which the given file depends on.
@@ -365,15 +365,15 @@ private:
    * use the given file.
    * @return Created graph nodes.
    */
-  std::vector<util::Graph::Node> getUsedFiles(
-    util::Graph& graph_,
-    const util::Graph::Node& node_,
-    bool reverse_ = false);
+  //std::vector<util::Graph::Node> getUsedFiles(
+   // util::Graph& graph_,
+   // const util::Graph::Node& node_,
+   // bool reverse_ = false);
 
-  std::vector<core::FileId> getUsedFileIds(
-    util::Graph& graph_,
-    const util::Graph::Node& node_,
-    bool reverse_);
+  //std::vector<core::FileId> getUsedFileIds(
+  //  util::Graph& graph_,
+  //  const util::Graph::Node& node_,
+  //  bool reverse_);
 
   static const Decoration centerNodeDecoration;
   static const Decoration sourceFileNodeDecoration;

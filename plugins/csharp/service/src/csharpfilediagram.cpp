@@ -6,6 +6,9 @@
 #include <util/dbutil.h>
 #include <util/legendbuilder.h>
 
+#include <model/file.h>
+#include <model/file-odb.hxx>
+
 #include "csharpfilediagram.h"
 
 
@@ -38,7 +41,7 @@ CsharpFileDiagram::CsharpFileDiagram(
       _projectHandler(db_, datadir_, context_)
 {
 }
-
+/*
 void CsharpFileDiagram::getComponentUsersDiagram(
   util::Graph& graph_,
   const core::FileId& fileId_)
@@ -331,7 +334,7 @@ std::string CsharpFileDiagram::getSubsystemDependencyDiagramLegend()
 
   return builder.getOutput();
 }
-/*
+
 std::vector<util::Graph::Node> FileDiagram::getIncludedFiles(
   util::Graph& graph_,
   const util::Graph::Node& node_,
@@ -359,7 +362,7 @@ std::vector<util::Graph::Node> FileDiagram::getIncludedFiles(
 
   return include;
 }
-*/
+
 std::vector<util::Graph::Node> CsharpFileDiagram::getIncludes(
   util::Graph& graph_,
   const util::Graph::Node& node_)
@@ -373,7 +376,7 @@ std::vector<util::Graph::Node> CsharpFileDiagram::getRevIncludes(
 {
   return getIncludedFiles(graph_, node_, true);
 }
-/*
+
 std::vector<util::Graph::Node> FileDiagram::getSubDirs(
   util::Graph& graph_,
   const util::Graph::Node& node_)
@@ -396,7 +399,7 @@ std::vector<util::Graph::Node> FileDiagram::getSubDirs(
 
   return usages;
 }
-*/
+
 std::vector<util::Graph::Node> CsharpFileDiagram::getImplements(
   util::Graph& graph_,
   const util::Graph::Node& node_)
@@ -410,7 +413,7 @@ std::vector<util::Graph::Node> CsharpFileDiagram::getRevImplements(
 {
   return getImplementedFiles(graph_, node_, true);
 }
-/*
+
 std::vector<util::Graph::Node> FileDiagram::getImplementedFiles(
   util::Graph& graph_,
   const util::Graph::Node& node_,
@@ -454,7 +457,7 @@ std::vector<util::Graph::Node> FileDiagram::getImplementedFiles(
   }
   return annotated;
 }
-*/
+
 std::vector<util::Graph::Node> CsharpFileDiagram::getDepends(
   util::Graph& graph_,
   const util::Graph::Node& node_)
@@ -468,7 +471,7 @@ std::vector<util::Graph::Node> CsharpFileDiagram::getRevDepends(
 {
   return getDependFiles(graph_, node_, true);
 }
-/*
+
 std::vector<util::Graph::Node> FileDiagram::getDependFiles(
   util::Graph& graph_,
   const util::Graph::Node& node_,
@@ -521,7 +524,7 @@ std::vector<util::Graph::Node> FileDiagram::getDependFiles(
   }
   return annotated;
 }
-*/
+
 std::vector<util::Graph::Node> CsharpFileDiagram::getProvides(
   util::Graph& graph_,
   const util::Graph::Node& node_)
@@ -555,7 +558,7 @@ std::vector<util::Graph::Node> CsharpFileDiagram::getProvidedFiles(
 
   return depends;
 }
-/*
+
 std::vector<core::FileId> FileDiagram::getProvidedFileIds(
   util::Graph&,
   const util::Graph::Node& node_,
@@ -629,7 +632,7 @@ std::vector<util::Graph::Node> FileDiagram::getRevContains(
 
   return contained;
 }
-*/
+
 std::vector<util::Graph::Node> CsharpFileDiagram::getUsages(
   util::Graph& graph_,
   const util::Graph::Node& node_)
@@ -847,7 +850,17 @@ void CsharpFileDiagram::getTestDiagram(
   core::FileInfo fileInfo;
   CsharpFileDiagram::_projectHandler.getFileInfo(fileInfo, fileId_);
   util::Graph::Node currentNode = addNode(graph_, fileInfo);
-  decorateNode(graph_, currentNode, centerNodeDecoration);
+  decorateNode(graph_, currentNode, sourceFileNodeDecoration);
+
+  core::FileInfo parentInfo;
+  CsharpFileDiagram::_projectHandler.getFileInfo(parentInfo,fileInfo.parent);
+  util::Graph::Node nextNode = addNode(graph_, parentInfo);
+  decorateNode(graph_, nextNode, directoryNodeDecoration);
+
+  util::Graph::Edge edge = graph_.createEdge(nextNode, currentNode);
+  decorateEdge(graph_, edge, containsEdgeDecoration);
+
+
 }
 
 } // language
