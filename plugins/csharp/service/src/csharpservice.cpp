@@ -4,6 +4,8 @@
 #include <model/file.h>
 #include <model/file-odb.hxx>
 
+#include "csharpfilediagram.h"
+
 namespace cc
 {
 namespace service
@@ -134,7 +136,7 @@ void CsharpServiceHandler::getDiagramTypes(
         const core::AstNodeId& astNodeId_)
 {
   LOG(info) << "getDiagramTypes";
-  //csharpQueryHandler.getDiagramTypes(return_, astNodeId_);
+  //_csharpQueryHandler.getDiagramTypes(return_, astNodeId_); 
 }
 
 void CsharpServiceHandler::getDiagram(
@@ -143,7 +145,7 @@ void CsharpServiceHandler::getDiagram(
         const std::int32_t diagramId_)
 {
   LOG(info) << "getDiagram";
-  //csharpQueryHandler.getDiagram(return_, astNodeId_, diagramId_);
+  //_csharpQueryHandler.getDiagram(return_, astNodeId_, diagramId_);
 }
 
 void CsharpServiceHandler::getDiagramLegend(
@@ -158,6 +160,7 @@ void CsharpServiceHandler::getFileDiagramTypes(
         const core::FileId& fileId_)
 {
   LOG(info) << "getFileDiagramTypes";
+  _csharpQueryHandler.getFileDiagramTypes(return_, fileId_); //most irtam
 }
 
 void CsharpServiceHandler::getFileDiagram(
@@ -166,6 +169,19 @@ void CsharpServiceHandler::getFileDiagram(
         const int32_t diagramId_)
 {
   LOG(info) << "getFileDiagram";
+
+  CsharpFileDiagram diagram(_db,_datadir, _context);
+  util::Graph graph;
+  graph.setAttribute("rankdir", "LR");
+
+  switch (diagramId_){
+    case 999:
+      diagram.getTestDiagram(graph, fileId_);
+      break;
+  }
+
+  if (graph.nodeCount() != 0)
+    return_ = graph.output(util::Graph::SVG);
 }
 
 void CsharpServiceHandler::getFileDiagramLegend(
@@ -288,7 +304,7 @@ void CsharpServiceHandler::getSyntaxHighlight(
       while (std::getline(s, line))
         content.push_back(line);
   });
-  csharpQueryHandler.getSyntaxHighlight(return_, range_, content);
+  _csharpQueryHandler.getSyntaxHighlight(return_, range_, content);
   */
 }
 

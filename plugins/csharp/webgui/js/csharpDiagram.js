@@ -87,7 +87,7 @@ function (topic, Menu, MenuItem, PopupMenuItem, model, viewHandler) {
 
       if (Object.keys(diagramTypes).length !== 0)
         return new PopupMenuItem({
-          label : 'C++ Diagrams',
+          label : 'C# Diagrams',
           popup : submenu
         });
     }

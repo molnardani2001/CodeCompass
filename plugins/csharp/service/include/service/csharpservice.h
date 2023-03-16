@@ -205,6 +205,21 @@ public:
     _thriftServerPort = port;
   }
 
+  void getFileDiagramTypes(
+          std::map<std::string, std::int32_t>& return_,
+          const core::FileId& fileId_) override
+  {
+    _service -> getFileDiagramTypes(return_, fileId_);
+  }
+
+  void getFileDiagram(
+          std::string& return_,
+          const core::FileId& fileId_,
+          const std::int32_t diagramId_) override
+  {
+    _service -> getFileDiagram(return_, fileId_, diagramId_);
+  }
+
 private:
     std::unique_ptr<CsharpServiceIf> _service;
     static std::stringstream _thriftStream;

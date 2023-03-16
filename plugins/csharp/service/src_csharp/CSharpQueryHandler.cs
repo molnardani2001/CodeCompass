@@ -680,5 +680,33 @@ public class CSharpQueryHandler : CsharpService.IAsync
         return await Task.FromResult(new List<language.SyntaxHighlight>());
     }
 
+    public async Task<Dictionary<string, int>> getFileDiagramTypesAsync(string fileId, 
+        CancellationToken cancellationToken = default(CancellationToken))  
+    {
+        return await Task.FromResult(new Dictionary<string, int>(){
+            {"TEST DIAGRAM", 999}
+        });
+    }  
+
+    public async Task<string> getFileDiagramAsync(string fileId, int diagramId, 
+        CancellationToken cancellationToken = default(CancellationToken))
+    {
+        /*switch (diagramId)
+        {
+            case 999:
+                string parent = dbContext.File
+                    .Where(a => (a.id).ToString() == fileId)
+                    .Select(a => a.parent)
+                    .ToString();
+                string parentInfo = dbContext.File
+                    .Where(a => parent == a.id.ToString())
+                    .ToString();
+
+                return await Task.FromResult(parentInfo);
+                break;
+        }
+        */
+        return await Task.FromResult("File Diagram");
+    }
 
 }

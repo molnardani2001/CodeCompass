@@ -55,4 +55,10 @@ service CsharpService
   list<language.SyntaxHighlight> getSyntaxHighlight(
    1:common.FileRange range,
    2:list<string> content)
+
+  map<string, i32> getFileDiagramTypes(1:common.FileId fileId)
+    throws (1:common.InvalidId ex)
+
+  string getFileDiagram(1:common.FileId fileId, 2:i32 diagramId)
+    throws (1:common.InvalidId exId, 2:common.Timeout exLong)
 }
