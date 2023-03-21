@@ -691,21 +691,26 @@ public class CSharpQueryHandler : CsharpService.IAsync
     public async Task<string> getFileDiagramAsync(string fileId, int diagramId, 
         CancellationToken cancellationToken = default(CancellationToken))
     {
-        /*switch (diagramId)
+        switch (diagramId)
         {
             case 999:
-                string parent = dbContext.File
+                string astnodevalues = dbContext.CsharpAstNodes
+                    .Where(a => a.Path == fileId)
+                    .Select(a => a.AstValue)
+                    .First()
+                    .ToString();
+                /*string parent = dbContext.
                     .Where(a => (a.id).ToString() == fileId)
                     .Select(a => a.parent)
                     .ToString();
                 string parentInfo = dbContext.File
                     .Where(a => parent == a.id.ToString())
                     .ToString();
-
-                return await Task.FromResult(parentInfo);
+                */
+                return await Task.FromResult(astnodevalues);
                 break;
         }
-        */
+        
         return await Task.FromResult("File Diagram");
     }
 

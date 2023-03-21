@@ -110,6 +110,7 @@ public:
   //std::string getComponentUsersDiagramLegend();
   
   void getTestDiagram(
+    std::string firstAstNodeValue,
     util::Graph& graph_,
     const core::FileId& fileId_);
 

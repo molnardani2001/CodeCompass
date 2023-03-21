@@ -176,7 +176,13 @@ void CsharpServiceHandler::getFileDiagram(
 
   switch (diagramId_){
     case 999:
-      //diagram.getTestDiagram(graph, fileId_);
+      model::FilePtr file=  _transaction([&, this](){
+        return _db->query_one<model::File>(
+        FileQuery::id == std::stoull(fileId_));
+      });
+      std::string data;
+      _csharpQueryHandler.getFileDiagram(data, file->path, diagramId_);
+      diagram.getTestDiagram(data, graph, fileId_);
       break;
   }
 

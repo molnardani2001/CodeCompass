@@ -844,6 +844,7 @@ const CsharpFileDiagram::Decoration CsharpFileDiagram::revDependsEdgeDecoration 
 };
 
 void CsharpFileDiagram::getTestDiagram(
+  std::string firstAstNodeValue,
   util::Graph& graph_,
   const core::FileId& fileId_)
 {
@@ -857,8 +858,16 @@ void CsharpFileDiagram::getTestDiagram(
   util::Graph::Node nextNode = addNode(graph_, parentInfo);
   decorateNode(graph_, nextNode, directoryNodeDecoration);
 
+  util::Graph::Node FirstAstValueToFileNode = graph_.createNode();
+  graph_.setNodeAttribute(FirstAstValueToFileNode, "label", firstAstNodeValue);
+  decorateNode(graph_, FirstAstValueToFileNode, centerNodeDecoration);
+
   util::Graph::Edge edge = graph_.createEdge(nextNode, currentNode);
   decorateEdge(graph_, edge, containsEdgeDecoration);
+
+  util::Graph::Edge edgeToValue = graph_.createEdge(currentNode, FirstAstValueToFileNode);
+  decorateEdge(graph_, edgeToValue, containsEdgeDecoration);
+
 
 
 }
