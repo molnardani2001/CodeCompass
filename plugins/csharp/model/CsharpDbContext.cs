@@ -16,8 +16,7 @@ namespace CSharpParser.model
         public DbSet<CsharpEnum> CsharpEnums { get; set; }
         public DbSet<CsharpEnumMember> CsharpEnumMembers { get; set; }        
         public DbSet<CsharpEtcEntity> CsharpEtcEntitys { get; set; }
-
-
+        public DbSet<CsharpEdge> CsharpEdge { get; set; }
     }
 
 }
