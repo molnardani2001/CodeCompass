@@ -539,6 +539,27 @@ namespace CSharpParser.Migrations
                 {
                     b.Navigation("CsharpEnumMembers");
                 });
+
+            modelBuilder.Entity("CSharpParser.model.CsharpEdge", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<long>("From")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("To")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CsharpEdge");
+                });
 #pragma warning restore 612, 618
         }
     }
