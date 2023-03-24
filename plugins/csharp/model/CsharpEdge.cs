@@ -13,7 +13,7 @@ namespace CSharpParser.model
     }
     class CsharpEdge 
     {
-        public ulong Id { get; set; }
+        public ulong EdgeId { get; set; }
         public ulong From { get; set; }
         public ulong To { get; set; }
         public EdgeType Type { get; set; }
@@ -38,13 +38,13 @@ namespace CSharpParser.model
 
         private ulong fnvHash(string data_)
         {
-            ulong hash = 16695981039346656037;
+            ulong hash = 14695981039346656037;
 
             int len = data_.Length;
             for (int i = 0; i < len; ++i)
             {
                 hash ^= data_[i];
-                hash *= 1699511628211;
+                hash *= 1099511628211;
             }
 
             return hash;

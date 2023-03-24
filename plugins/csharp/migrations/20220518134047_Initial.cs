@@ -313,15 +313,14 @@ namespace CSharpParser.Migrations
                 name: "CsharpEdge",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    From = table.Column<long>(type: "bigint", nullable: false),
-                    To = table.Column<long>(type: "bigint", nullable: false),
+                    EdgeId = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
+                    From = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
+                    To = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CsharpEdge", x => x.Id);
+                    table.PrimaryKey("PK_CsharpEdge", x => x.EdgeId);
                 });
 
             migrationBuilder.CreateIndex(
