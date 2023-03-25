@@ -13,7 +13,7 @@ namespace CSharpParser.model
     }
     class CsharpEdge 
     {
-        public ulong EdgeId { get; set; }
+        public ulong Id { get; set; }
         public ulong From { get; set; }
         public ulong To { get; set; }
         public EdgeType Type { get; set; }

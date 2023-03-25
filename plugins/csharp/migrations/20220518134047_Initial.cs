@@ -309,20 +309,6 @@ namespace CSharpParser.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "CsharpEdge",
-                columns: table => new
-                {
-                    EdgeId = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
-                    From = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
-                    To = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CsharpEdge", x => x.EdgeId);
-                });
-
             migrationBuilder.CreateIndex(
                 name: "IX_CsharpClasses_AstNodeId",
                 table: "CsharpClasses",
@@ -452,9 +438,6 @@ namespace CSharpParser.Migrations
 
             migrationBuilder.DropTable(
                 name: "CsharpAstNodes");
-
-            migrationBuilder.DropTable(
-                name: "CsharpEdge");
         }
     }
 }

@@ -14,7 +14,7 @@ namespace CSharpParser
 {
     class Program
     {
-        //private readonly CsharpDbContext _context;
+        private readonly CsharpDbContext _context;
         private static string _rootDir = "";
         private static string _buildDir = "";
         private static string _buildDirBase = "";
