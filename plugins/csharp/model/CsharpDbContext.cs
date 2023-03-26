@@ -5,7 +5,22 @@ namespace CSharpParser.model
 {
     class CsharpDbContext : DbContext
     {
-        public CsharpDbContext(DbContextOptions options) : base(options) { }
+        private readonly bool isMigration = false;
+        public CsharpDbContext()
+        {
+            isMigration = true;
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (isMigration)
+            {
+                optionsBuilder.UseNpgsql(@"Server=localhost;Port=5432;Database=migrations;User Id=compass;Password=compass");
+                base.OnConfiguring(optionsBuilder);
+            }
+        }
+
+        public CsharpDbContext(DbContextOptions<CsharpDbContext> options) : base(options) { }
         
         public DbSet<CsharpAstNode> CsharpAstNodes { get; set; }
         public DbSet<CsharpNamespace> CsharpNamespaces { get; set; }
