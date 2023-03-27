@@ -9,6 +9,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CSharpParser.model;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CSharpParser
 {
@@ -70,7 +72,16 @@ namespace CSharpParser
                             .Options;
 
             CsharpDbContext _context = new CsharpDbContext(options);
-            _context.Database.Migrate();
+            //_context.Database.Migrate();
+            try
+            {
+                _context.CsharpAstNodes.Count();
+            }
+            catch
+            {
+                RelationalDatabaseCreator creator = _context.Database.GetService<IDatabaseCreator>() as RelationalDatabaseCreator;
+                creator.CreateTables();
+            }
 
             IEnumerable<string> allFiles = GetSourceFilesFromDir(_rootDir, ".cs");
             IEnumerable<string> assemblies = GetSourceFilesFromDir(_buildDir, ".dll");

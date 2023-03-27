@@ -83,6 +83,7 @@ bool CsharpParser::parseProjectBuildPath(const std::vector<std::string>& paths_)
 
   std::string line;
   std::stringstream log_str(log.get());
+  LOG(warning) << log_str.str();
   int countFull = 0, countPart = 0;
   
   while(std::getline(log_str, line, '\n'))
