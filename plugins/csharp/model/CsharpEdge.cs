@@ -30,24 +30,5 @@ namespace CSharpParser.model
 
             return string.Empty;
         }
-
-        public ulong createIdentifier(CsharpEdge edge_)
-        {
-            return fnvHash($"{edge_.From}{edge_.To}{typeToString(edge_.Type)}");
-        }
-
-        private ulong fnvHash(string data_)
-        {
-            ulong hash = 14695981039346656037;
-
-            int len = data_.Length;
-            for (int i = 0; i < len; ++i)
-            {
-                hash ^= data_[i];
-                hash *= 1099511628211;
-            }
-
-            return hash;
-        }     
     }
 }
