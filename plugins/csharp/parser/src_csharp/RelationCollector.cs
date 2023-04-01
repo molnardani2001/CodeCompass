@@ -4,8 +4,10 @@ using System.Linq;
 using static System.Console;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.FindSymbols;
 using CSharpParser.model;
 using Microsoft.CodeAnalysis;
+using System.Threading.Tasks;
 
 namespace CSharpParser
 {
@@ -19,7 +21,8 @@ namespace CSharpParser
         {
             this.DbContext = context;
             this.Model = model;
-            this.Tree = tree;            
+            this.Tree = tree;  
+            //this.solution = Solution ???          
         }    
 
         public override void VisitVariableDeclarator(VariableDeclaratorSyntax node)
@@ -27,7 +30,10 @@ namespace CSharpParser
             if (node.Initializer != null)
             {
                 var symbol = Model.GetDeclaredSymbol(node);
-                var references = symbol.FindReferences(Model.Compilation);
+                var references = symbol.FindReferences(/*Model.Compilation*/);
+                //var solution = _semanticModel.Compilation.SyntaxTrees.First().Options.SyntaxTree.GetRoot().SyntaxTree.Options
+                //        .Project.Solution;
+                //var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
 
                 foreach (var reference in references)
                 {
@@ -41,15 +47,12 @@ namespace CSharpParser
 
                         var referenceFile = referenceNode.SyntaxTree.FilePath;
 
-                        WriteLine($"Value declaringFile: {declarinFile}; referenceFile: {referenceFile}");
+                        WriteLine($"Value declaringFile: {declaringFile}; referenceFile: {referenceFile}");
 
-                        CsharpEdge csharpEdge = new CsharpEdge
-                        {
-                            Id = null,
-                            From = fvnHash(declaringFile),
-                            To = fvnHash(referenceFile),
-                            EdgeType = EdgeType.USE
-                        };
+                        CsharpEdge csharpEdge = new CsharpEdge();
+                        csharpEdge.From = fnvHash(declaringFile);
+                        csharpEdge.To = fnvHash(referenceFile);
+                        csharpEdge.Type = EdgeType.USE;
                         csharpEdge.Id = createIdentifier(csharpEdge);
                         DbContext.CsharpEdges.Add(csharpEdge);
                     }
@@ -58,44 +61,84 @@ namespace CSharpParser
 
             base.VisitVariableDeclarator(node);
         }
+        
 
-    public override void VisitInvocationExpression(InvocationExpressionSyntax node)
-    {
-        var symbol = Model.GetSymbolInfo(node).Symbol;
-
-        if (symbol != null && symbol.Kind == SymbolKind.Method)
+        /*
+        public override void VisitVariableDeclarator(VariableDeclaratorSyntax node)
         {
-            var methodSymbol = (IMethodSymbol)symbol;
+            var symbol = Model.GetDeclaredSymbol(node);
 
-            var containingType = methodSymbol.ContainingType;
-            if (containingType != null && containingType.Name != "<global namespace>")
+            var solution = 
+
+            ProcessReferencesAsync(node, symbol, solution).Wait();
+
+            base.VisitVariableDeclarator(node);
+        }
+
+        private async Task ProcessReferencesAsync(VariableDeclaratorSyntax node, ISymbol symbol, Solution solution)
+        {
+            var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
+
+            foreach (var reference in references)
             {
-                var declaringFile = node.SyntaxTree.FilePath;
-
-                string referenceFile = null;
-                if (containingType.Locations.Length > 0)
+                var referenceNode = reference.Definition.DeclaringSyntaxReferences[0].GetSyntax();
+                if (referenceNode != node)
                 {
-                    referenceFile = containingType.Locations[0].SourceTree.FilePath;
-                }
-                WriteLine($"Method declaringFile: {declaringFile}; referenceFile: {referenceFile}");
+                    var referenceSymbol = Model.GetSymbolInfo(referenceNode).Symbol;
 
-                if (referenceFile != null)
-                {
-                    CsharpEdge csharpEdge = new CsharpEdge
-                    {
-                        Id = null,
-                        From = fvnHash(declaringFile),
-                        To = fvnHash(referenceFile),
-                        EdgeType = EdgeType.USE
-                    };
+                    var declaringNode = node.Parent.Parent; // The parent of the variable declarator is the variable declaration syntax, whose parent is the member declaration syntax.
+                    var declaringFile = declaringNode.SyntaxTree.FilePath;
+
+                    var referenceFile = referenceNode.SyntaxTree.FilePath;
+
+                    WriteLine($"Value declaringFile: {declaringFile}; referenceFile: {referenceFile}");
+
+                    CsharpEdge csharpEdge = new CsharpEdge();
+                    csharpEdge.From = fnvHash(declaringFile);
+                    csharpEdge.To = fnvHash(referenceFile);
+                    csharpEdge.Type = EdgeType.USE;
                     csharpEdge.Id = createIdentifier(csharpEdge);
                     DbContext.CsharpEdges.Add(csharpEdge);
                 }
             }
         }
+        */
 
-        base.VisitInvocationExpression(node);
-    }
+
+        public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+        {
+            var symbol = Model.GetSymbolInfo(node).Symbol;
+
+            if (symbol != null && symbol.Kind == SymbolKind.Method)
+            {
+                var methodSymbol = (IMethodSymbol)symbol;
+
+                var containingType = methodSymbol.ContainingType;
+                if (containingType != null && containingType.Name != "<global namespace>")
+                {
+                    var declaringFile = node.SyntaxTree.FilePath;
+
+                    string referenceFile = null;
+                    if (containingType.Locations.Length > 0)
+                    {
+                        referenceFile = containingType.Locations[0].SourceTree.FilePath;
+                    }
+                    WriteLine($"Method declaringFile: {declaringFile}; referenceFile: {referenceFile}");
+
+                    if (referenceFile != null)
+                    {
+                        CsharpEdge csharpEdge = new CsharpEdge();
+                        csharpEdge.From = fnvHash(declaringFile);
+                        csharpEdge.To = fnvHash(referenceFile);
+                        csharpEdge.Type = EdgeType.USE;
+                        csharpEdge.Id = createIdentifier(csharpEdge);
+                        DbContext.CsharpEdges.Add(csharpEdge);
+                    }
+                }
+            }
+
+            base.VisitInvocationExpression(node);
+        }
 
         private ulong createIdentifier(CsharpEdge edge_)
         {
@@ -114,6 +157,19 @@ namespace CSharpParser
             }
 
             return hash;
+        }
+
+        private string typeToString(EdgeType type_)
+        {
+            switch (type_)
+            {
+                case EdgeType.PROVIDE: return "Provide";
+                case EdgeType.IMPLEMENT: return "Implement";
+                case EdgeType.USE: return "Use";
+                case EdgeType.DEPEND: return "Depend";
+            }
+
+            return string.Empty;
         }     
     }
 }

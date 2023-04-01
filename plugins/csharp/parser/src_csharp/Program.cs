@@ -112,6 +112,9 @@ namespace CSharpParser
 
             var runtask = ParalellRun(csharpConnectionString, threadNum, trees, compilation);
             int ret = runtask.Result;
+
+            var collecttask = ParalellCollect(csharpConnectionString, threadNum, trees, compilation);
+            int res = collecttask.Result;
             
             return 0;
         }
@@ -174,6 +177,67 @@ namespace CSharpParser
                 return index;
             });
             return await ParingTask;
+        }
+
+        //
+
+        private static async Task<int> ParalellCollect(string csharpConnectionString, int threadNum,
+            List<SyntaxTree> trees, CSharpCompilation compilation)
+        {
+            var options = new DbContextOptionsBuilder<CsharpDbContext>()
+                .UseNpgsql(csharpConnectionString)
+                .Options;
+            CsharpDbContext dbContext = new CsharpDbContext(options);
+
+            var contextList = new List<CsharpDbContext>();
+            contextList.Add(dbContext);
+            for (int i = 1; i < threadNum; i++)
+            {
+                CsharpDbContext dbContextInstance = new CsharpDbContext(options);
+                contextList.Add(dbContextInstance);
+            }
+
+            var CollectingTasks = new List<Task<int>>();
+            int maxThread = threadNum < trees.Count() ? threadNum : trees.Count();
+            for (int i = 0; i < maxThread; i++)
+            {                
+                CollectingTasks.Add(CollectRelation(contextList[i],trees[i],compilation,i));
+            }
+
+            int nextTreeIndex = maxThread;
+            while (CollectingTasks.Count > 0)
+            {
+                var finshedTask = await Task.WhenAny<int>(CollectingTasks);
+                int nextContextIndex = await finshedTask;
+
+                CollectingTasks.Remove(finshedTask);
+                if (nextTreeIndex < trees.Count)
+                {
+                    CollectingTasks.Add(CollectRelation(contextList[nextContextIndex],
+                        trees[nextTreeIndex],compilation,nextContextIndex));
+                    ++nextTreeIndex;
+                }
+            }
+
+            foreach (var ctx in contextList)
+            {
+                ctx.SaveChanges();
+            }
+
+            return 0;
+        }
+
+        private static async Task<int> CollectRelation(CsharpDbContext context, 
+            SyntaxTree tree, CSharpCompilation compilation, int index)
+        {
+            var CollectingTask = Task.Run(() =>
+            {
+                SemanticModel model = compilation.GetSemanticModel(tree);
+                var visitor = new RelationCollector(context, model, tree);
+                visitor.Visit(tree.GetCompilationUnitRoot());                
+                return index;
+            });
+            return await CollectingTask;
         }
 
         public static IEnumerable<string> GetSourceFilesFromDir(string root, string extension)
