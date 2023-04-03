@@ -16,21 +16,23 @@ namespace CSharpParser
         private readonly CsharpDbContext DbContext;
         private readonly SemanticModel Model;
         private readonly SyntaxTree Tree;
+        private readonly Solution Solution;
 
-        public RelationCollector(CsharpDbContext context, SemanticModel model, SyntaxTree tree)
+        public RelationCollector(CsharpDbContext context, SemanticModel model, SyntaxTree tree, Solution solution)
         {
             this.DbContext = context;
             this.Model = model;
             this.Tree = tree;  
-            //this.solution = Solution ???          
+            this.Solution = solution;          
         }    
 
+        /*
         public override void VisitVariableDeclarator(VariableDeclaratorSyntax node)
         {
             if (node.Initializer != null)
             {
                 var symbol = Model.GetDeclaredSymbol(node);
-                var references = symbol.FindReferences(/*Model.Compilation*/);
+                var references = symbol.FindReferences(Model.Compilation);
                 //var solution = _semanticModel.Compilation.SyntaxTrees.First().Options.SyntaxTree.GetRoot().SyntaxTree.Options
                 //        .Project.Solution;
                 //var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
@@ -62,22 +64,20 @@ namespace CSharpParser
             base.VisitVariableDeclarator(node);
         }
         
-
-        /*
+        */
+        
         public override void VisitVariableDeclarator(VariableDeclaratorSyntax node)
         {
             var symbol = Model.GetDeclaredSymbol(node);
 
-            var solution = 
-
-            ProcessReferencesAsync(node, symbol, solution).Wait();
+            ProcessReferencesAsync(node, symbol).Wait();
 
             base.VisitVariableDeclarator(node);
         }
 
-        private async Task ProcessReferencesAsync(VariableDeclaratorSyntax node, ISymbol symbol, Solution solution)
+        private async Task ProcessReferencesAsync(VariableDeclaratorSyntax node, ISymbol symbol)
         {
-            var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
+            var references = await SymbolFinder.FindReferencesAsync(symbol, Solution);
 
             foreach (var reference in references)
             {
@@ -102,7 +102,7 @@ namespace CSharpParser
                 }
             }
         }
-        */
+        
 
 
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
@@ -119,7 +119,7 @@ namespace CSharpParser
                     var declaringFile = node.SyntaxTree.FilePath;
 
                     string referenceFile = null;
-                    if (containingType.Locations.Length > 0)
+                    if (containingType.Locations.Length > 0 && containingType.Locations[0].SourceTree != null)
                     {
                         referenceFile = containingType.Locations[0].SourceTree.FilePath;
                     }

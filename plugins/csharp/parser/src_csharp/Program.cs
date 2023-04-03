@@ -90,12 +90,16 @@ namespace CSharpParser
                 assemblies_base = GetSourceFilesFromDir(_buildDirBase, ".dll");
 
             List<SyntaxTree> trees = new List<SyntaxTree>();
+            var workspace = new AdhocWorkspace();
+            var project = workspace.AddProject("MyProject", LanguageNames.CSharp);
             foreach (string file in allFiles)
             {
                 string programText = File.ReadAllText(file);
                 SyntaxTree tree = CSharpSyntaxTree.ParseText(programText, null, file);
                 trees.Add(tree);
+                var document = workspace.AddDocument(project.Id, file, Microsoft.CodeAnalysis.Text.SourceText.From(File.ReadAllText(file)));
             }
+            var solution = workspace.CurrentSolution;
 
             CSharpCompilation compilation = CSharpCompilation.Create("CSharpCompilation")
                 .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
@@ -113,7 +117,7 @@ namespace CSharpParser
             var runtask = ParalellRun(csharpConnectionString, threadNum, trees, compilation);
             int ret = runtask.Result;
 
-            var collecttask = ParalellCollect(csharpConnectionString, threadNum, trees, compilation);
+            var collecttask = ParalellCollect(csharpConnectionString, threadNum, trees, compilation, solution);
             int res = collecttask.Result;
             
             return 0;
@@ -182,7 +186,7 @@ namespace CSharpParser
         //
 
         private static async Task<int> ParalellCollect(string csharpConnectionString, int threadNum,
-            List<SyntaxTree> trees, CSharpCompilation compilation)
+            List<SyntaxTree> trees, CSharpCompilation compilation, Solution solution)
         {
             var options = new DbContextOptionsBuilder<CsharpDbContext>()
                 .UseNpgsql(csharpConnectionString)
@@ -201,7 +205,7 @@ namespace CSharpParser
             int maxThread = threadNum < trees.Count() ? threadNum : trees.Count();
             for (int i = 0; i < maxThread; i++)
             {                
-                CollectingTasks.Add(CollectRelation(contextList[i],trees[i],compilation,i));
+                CollectingTasks.Add(CollectRelation(contextList[i],trees[i],compilation,i,solution));
             }
 
             int nextTreeIndex = maxThread;
@@ -214,7 +218,7 @@ namespace CSharpParser
                 if (nextTreeIndex < trees.Count)
                 {
                     CollectingTasks.Add(CollectRelation(contextList[nextContextIndex],
-                        trees[nextTreeIndex],compilation,nextContextIndex));
+                        trees[nextTreeIndex],compilation,nextContextIndex,solution));
                     ++nextTreeIndex;
                 }
             }
@@ -228,12 +232,12 @@ namespace CSharpParser
         }
 
         private static async Task<int> CollectRelation(CsharpDbContext context, 
-            SyntaxTree tree, CSharpCompilation compilation, int index)
+            SyntaxTree tree, CSharpCompilation compilation, int index, Solution solution)
         {
             var CollectingTask = Task.Run(() =>
             {
                 SemanticModel model = compilation.GetSemanticModel(tree);
-                var visitor = new RelationCollector(context, model, tree);
+                var visitor = new RelationCollector(context, model, tree, solution);
                 visitor.Visit(tree.GetCompilationUnitRoot());                
                 return index;
             });
