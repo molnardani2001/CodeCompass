@@ -31,6 +31,8 @@ struct Microservice
   #pragma db not_null
   std::string name;
 
+  std::string version;
+
   FileId file;
 
   ServiceType type;

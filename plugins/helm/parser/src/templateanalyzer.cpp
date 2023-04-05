@@ -166,6 +166,7 @@ void TemplateAnalyzer::processServiceDeps(
     externalService.type = model::Microservice::ServiceType::EXTERNAL;
     externalService.file = filePtr->id;
     externalService.serviceId = createIdentifier(externalService);
+    externalService.version = YAML::Dump(currentFile_["metadata"]["labels"]["app.kubernetes.io\/version"]);
     _ctx.db->persist(externalService);
 
     helmTemplate.depends = externalService.serviceId;

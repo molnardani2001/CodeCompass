@@ -200,13 +200,15 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
       {
         file->type = model::YamlFile::Type::HELM_SUBCHART;
         
-        if (std::find(_processedMS.begin(), _processedMS.end(), YAML::Dump(loadedFile["name"])) == _processedMS.end())
+        if (std::find(_processedMS.begin(), _processedMS.end(), YAML::Dump(loadedFile["name"])) == _processedMS.end()
+          && std::find(_processedMS.begin(), _processedMS.end(), YAML::Dump(loadedFile["version"])) == _processedMS.end())
         {
           model::Microservice service;
           service.file = file_->id;
           service.name = YAML::Dump(loadedFile["name"]);
           service.type = model::Microservice::ServiceType::INTERNAL;
           service.serviceId = cc::model::createIdentifier(service);
+          service.version = YAML::Dump(loadedFile["version"]);
           _ctx.db->persist(service);
           _processedMS.push_back(service.name);
         }
@@ -274,6 +276,7 @@ void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& load
     service.file = file_->id;
     service.type = model::Microservice::ServiceType::INTERNAL;
     service.name = YAML::Dump(loadedFile_["name"]);
+    service.version = YAML::Dump(loadedFile_["version"]);
 
     if (std::find(_processedMS.begin(), _processedMS.end(), service.name) == _processedMS.end())
     {
@@ -294,6 +297,7 @@ void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& load
       model::Microservice service;
       service.file = file_->id;
       service.type = model::Microservice::ServiceType::INTERNAL;
+      service.version = YAML::Dump((*iter)["version"]);
 
       if ((*iter)["alias"])
         service.name = YAML::Dump((*iter)["alias"]);

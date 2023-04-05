@@ -517,7 +517,7 @@ util::Graph::Node YamlFileDiagram::addNode(
   const model::Microservice& service_)
 {
   util::Graph::Node node_ = graph_.getOrCreateNode(std::to_string(service_.serviceId));
-  graph_.setNodeAttribute(node_, "label", service_.name);
+  graph_.setNodeAttribute(node_, "label", service_.name + "\n" + service_.version);
 
   decorateNode(graph_, node_, microserviceNodeDecoration);
 
@@ -538,8 +538,8 @@ util::Graph::Node YamlFileDiagram::addNode(
 }
 
 std::string YamlFileDiagram::getLastNParts(
-        const std::string& path_,
-        std::size_t n_)
+  const std::string& path_,
+  std::size_t n_)
 {
   if (path_.empty() || n_ == 0)
     return "";
