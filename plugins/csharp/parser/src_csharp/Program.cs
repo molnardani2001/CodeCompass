@@ -115,10 +115,11 @@ namespace CSharpParser
             }
 
             var runtask = ParalellRun(csharpConnectionString, threadNum, trees, compilation);
-            int ret = runtask.Result;
-
             var collecttask = ParalellCollect(csharpConnectionString, threadNum, trees, compilation, solution);
+
+            int ret = runtask.Result;
             int res = collecttask.Result;
+
             
             return 0;
         }

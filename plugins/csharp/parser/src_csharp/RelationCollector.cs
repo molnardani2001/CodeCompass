@@ -91,14 +91,19 @@ namespace CSharpParser
 
                     var referenceFile = referenceNode.SyntaxTree.FilePath;
 
-                    WriteLine($"Value declaringFile: {declaringFile}; referenceFile: {referenceFile}");
+                    if (referenceFile != null && 
+                        declaringFile != null && 
+                        referenceFile != declaringFile)
+                    {
+                        WriteLine($"Value declaringFile: {declaringFile}; referenceFile: {referenceFile}");
 
-                    CsharpEdge csharpEdge = new CsharpEdge();
-                    csharpEdge.From = fnvHash(declaringFile);
-                    csharpEdge.To = fnvHash(referenceFile);
-                    csharpEdge.Type = EdgeType.USE;
-                    csharpEdge.Id = createIdentifier(csharpEdge);
-                    DbContext.CsharpEdges.Add(csharpEdge);
+                        CsharpEdge csharpEdge = new CsharpEdge();
+                        csharpEdge.From = fnvHash(declaringFile);
+                        csharpEdge.To = fnvHash(referenceFile);
+                        csharpEdge.Type = EdgeType.USE;
+                        csharpEdge.Id = createIdentifier(csharpEdge);
+                        DbContext.CsharpEdges.Add(csharpEdge);
+                    }
                 }
             }
         }
@@ -123,10 +128,13 @@ namespace CSharpParser
                     {
                         referenceFile = containingType.Locations[0].SourceTree.FilePath;
                     }
-                    WriteLine($"Method declaringFile: {declaringFile}; referenceFile: {referenceFile}");
 
-                    if (referenceFile != null)
+                    if (referenceFile != null && 
+                        declaringFile != null && 
+                        referenceFile != declaringFile)
                     {
+                        WriteLine($"Method declaringFile: {declaringFile}; referenceFile: {referenceFile}");
+
                         CsharpEdge csharpEdge = new CsharpEdge();
                         csharpEdge.From = fnvHash(declaringFile);
                         csharpEdge.To = fnvHash(referenceFile);
