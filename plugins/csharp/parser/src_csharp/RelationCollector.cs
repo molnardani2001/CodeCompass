@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.FindSymbols;
 using CSharpParser.model;
 using Microsoft.CodeAnalysis;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace CSharpParser
 {
@@ -17,55 +18,75 @@ namespace CSharpParser
         private readonly SemanticModel Model;
         private readonly SyntaxTree Tree;
         private readonly Solution Solution;
+        private readonly ConcurrentDictionary<ulong, CsharpEdge> Edges;
 
-        public RelationCollector(CsharpDbContext context, SemanticModel model, SyntaxTree tree, Solution solution)
+        public RelationCollector(CsharpDbContext context, SemanticModel model, SyntaxTree tree, ConcurrentDictionary<ulong, CsharpEdge> edges, Solution solution)
         {
             this.DbContext = context;
             this.Model = model;
             this.Tree = tree;  
+            this.Edges = edges;
             this.Solution = solution;          
         }    
 
-        /*
+        //test
+
         public override void VisitVariableDeclarator(VariableDeclaratorSyntax node)
         {
-            if (node.Initializer != null)
-            {
-                var symbol = Model.GetDeclaredSymbol(node);
-                var references = symbol.FindReferences(Model.Compilation);
-                //var solution = _semanticModel.Compilation.SyntaxTrees.First().Options.SyntaxTree.GetRoot().SyntaxTree.Options
-                //        .Project.Solution;
-                //var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
+            if (node.Initializer == null) return;
 
-                foreach (var reference in references)
-                {
-                    var referenceNode = reference.Definition.DeclaringSyntaxReferences[0].GetSyntax();
-                    if (referenceNode != node)
-                    {
-                        var referenceSymbol = Model.GetSymbolInfo(referenceNode).Symbol;
+            var symbol = Model.GetSymbolInfo(node.Initializer.Value).Symbol;
+            if (symbol == null || symbol.ContainingAssembly.Identity != Model.Compilation.Assembly.Identity) return;
 
-                        var declaringNode = node.Parent.Parent; // The parent of the variable declarator is the variable declaration syntax, whose parent is the member declaration syntax.
-                        var declaringFile = declaringNode.SyntaxTree.FilePath;
+            var symbolLocation = symbol.Locations.FirstOrDefault(loc => loc.IsInSource);
+            if (symbolLocation == null) return;
 
-                        var referenceFile = referenceNode.SyntaxTree.FilePath;
+            var symbolFilePath = symbolLocation.SourceTree?.FilePath;
+            var usageFilePath = node.SyntaxTree.FilePath;
+            if (symbolFilePath == null || 
+                usageFilePath == null ||
+                symbolFilePath == usageFilePath) return;
 
-                        WriteLine($"Value declaringFile: {declaringFile}; referenceFile: {referenceFile}");
 
-                        CsharpEdge csharpEdge = new CsharpEdge();
-                        csharpEdge.From = fnvHash(declaringFile);
-                        csharpEdge.To = fnvHash(referenceFile);
-                        csharpEdge.Type = EdgeType.USE;
-                        csharpEdge.Id = createIdentifier(csharpEdge);
-                        DbContext.CsharpEdges.Add(csharpEdge);
-                    }
-                }
-            }
+            WriteLine($"Value usagePath: {usageFilePath}; symbolFilePath: {symbolFilePath}");
+
+            CsharpEdge csharpEdge = new CsharpEdge();
+            csharpEdge.From = fnvHash(usageFilePath);
+            csharpEdge.To = fnvHash(symbolFilePath);
+            csharpEdge.Type = EdgeType.USE;
+            csharpEdge.Id = createIdentifier(csharpEdge);
+            
+            Edges.TryAdd(csharpEdge.Id,csharpEdge);
 
             base.VisitVariableDeclarator(node);
         }
-        
-        */
-        
+
+        public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+        {
+            var methodSymbol = Model.GetSymbolInfo(node).Symbol as IMethodSymbol;
+             if (methodSymbol == null || methodSymbol.ContainingAssembly.Identity != Model.Compilation.Assembly.Identity) return;
+
+            var symbolFilePath = methodSymbol.Locations.FirstOrDefault(loc => loc.IsInSource)?.SourceTree?.FilePath;
+            var usageFilePath = node.SyntaxTree.FilePath;
+            if (symbolFilePath == null || 
+                usageFilePath == null ||
+                symbolFilePath == usageFilePath) return;
+
+            WriteLine($"Value usageFilePath: {usageFilePath}; symbolFilePath: {symbolFilePath}");
+
+            CsharpEdge csharpEdge = new CsharpEdge();
+            csharpEdge.From = fnvHash(usageFilePath);
+            csharpEdge.To = fnvHash(symbolFilePath);
+            csharpEdge.Type = EdgeType.USE;
+            csharpEdge.Id = createIdentifier(csharpEdge);
+            
+            Edges.TryAdd(csharpEdge.Id,csharpEdge);
+            
+            base.VisitInvocationExpression(node);
+        }
+
+
+        /*
         public override void VisitVariableDeclarator(VariableDeclaratorSyntax node)
         {
             var symbol = Model.GetDeclaredSymbol(node);
@@ -107,9 +128,9 @@ namespace CSharpParser
                 }
             }
         }
-        
+        */
 
-
+        /*
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             var symbol = Model.GetSymbolInfo(node).Symbol;
@@ -140,13 +161,14 @@ namespace CSharpParser
                         csharpEdge.To = fnvHash(referenceFile);
                         csharpEdge.Type = EdgeType.USE;
                         csharpEdge.Id = createIdentifier(csharpEdge);
-                        DbContext.CsharpEdges.Add(csharpEdge);
+                        //DbContext.CsharpEdges.Add(csharpEdge);
                     }
                 }
             }
 
             base.VisitInvocationExpression(node);
         }
+        */
 
         private ulong createIdentifier(CsharpEdge edge_)
         {

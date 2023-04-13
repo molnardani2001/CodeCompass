@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using CSharpParser.model;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using System.Collections.Concurrent;
 
 namespace CSharpParser
 {
@@ -203,10 +204,11 @@ namespace CSharpParser
             }
 
             var CollectingTasks = new List<Task<int>>();
+            ConcurrentDictionary<ulong, CsharpEdge> edges = new ConcurrentDictionary<ulong, CsharpEdge>();
             int maxThread = threadNum < trees.Count() ? threadNum : trees.Count();
             for (int i = 0; i < maxThread; i++)
             {                
-                CollectingTasks.Add(CollectRelation(contextList[i],trees[i],compilation,i,solution));
+                CollectingTasks.Add(CollectRelation(contextList[i],trees[i],compilation,i,edges,solution));
             }
 
             int nextTreeIndex = maxThread;
@@ -219,27 +221,39 @@ namespace CSharpParser
                 if (nextTreeIndex < trees.Count)
                 {
                     CollectingTasks.Add(CollectRelation(contextList[nextContextIndex],
-                        trees[nextTreeIndex],compilation,nextContextIndex,solution));
+                        trees[nextTreeIndex],compilation,nextContextIndex, edges, solution));
                     ++nextTreeIndex;
                 }
             }
 
-            foreach (var ctx in contextList)
+            foreach (var edge in edges)
             {
-                ctx.SaveChanges();
-            }
+                //var duplicate = dbContext.CsharpEdges.
+                //    Where(a => a.Id == edge.Key).
+                //    FirstOrDefault();
+                //if (duplicate == null)
+                    dbContext.CsharpEdges.Add(edge.Value);
+            }          
+
+            dbContext.SaveChanges();
+
+            //foreach (var ctx in contextList)
+            //{
+            //    ctx.SaveChanges();
+            //}
 
             return 0;
         }
 
         private static async Task<int> CollectRelation(CsharpDbContext context, 
-            SyntaxTree tree, CSharpCompilation compilation, int index, Solution solution)
+            SyntaxTree tree, CSharpCompilation compilation, int index, ConcurrentDictionary<ulong, CsharpEdge> edges,
+            Solution solution)
         {
             var CollectingTask = Task.Run(() =>
             {
                 SemanticModel model = compilation.GetSemanticModel(tree);
-                var visitor = new RelationCollector(context, model, tree, solution);
-                visitor.Visit(tree.GetCompilationUnitRoot());                
+                var visitor = new RelationCollector(context, model, tree, edges, solution);
+                visitor.Visit(tree.GetCompilationUnitRoot());      
                 return index;
             });
             return await CollectingTask;
