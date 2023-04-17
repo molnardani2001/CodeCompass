@@ -160,7 +160,26 @@ void CsharpServiceHandler::getFileDiagramTypes(
         const core::FileId& fileId_)
 {
   LOG(info) << "getFileDiagramTypes";
-  _csharpQueryHandler.getFileDiagramTypes(return_, fileId_); //most irtam
+  //_csharpQueryHandler.getFileDiagramTypes(return_, fileId_); //most irtam
+
+  model::FilePtr file = _transaction([&, this](){
+    return _db->query_one<model::File>(
+      FileQuery::id == std::stoull(fileId_));
+  });
+
+  if (file)
+  {
+    if (file->type == model::File::DIRECTORY_TYPE)
+    {
+      //return_["Internal architecture of this module"] = SUBSYSTEM_DEPENDENCY;
+      //return_["This module depends on"]               = EXTERNAL_DEPENDENCY;
+      //return_["Users of this module"]                 = EXTERNAL_USERS;
+    }
+    else if (file->type == "CS")
+    {
+      return_["File usage diagram"] = FILE_USAGES;
+    }
+  }
 }
 
 void CsharpServiceHandler::getFileDiagram(
@@ -175,14 +194,17 @@ void CsharpServiceHandler::getFileDiagram(
   graph.setAttribute("rankdir", "LR");
 
   switch (diagramId_){
-    case 999:
-      model::FilePtr file=  _transaction([&, this](){
+    case 0: //FILE_USAGES
+      /* model::FilePtr file=  _transaction([&, this](){
         return _db->query_one<model::File>(
         FileQuery::id == std::stoull(fileId_));
-      });
+      }); */
       std::string data;
-      _csharpQueryHandler.getFileDiagram(data, file->path, diagramId_);
-      diagram.getTestDiagram(data, graph, fileId_);
+      //Gather data related to FILE_USAGES diagram
+      //Format $"{uses}:{revUses}"
+      _csharpQueryHandler.getFileDiagram(data, fileId_, diagramId_);
+      LOG(info) << "FILE USAGES data: " << data; 
+      //diagram.getIncludeDependencyDiagram()
       break;
   }
 

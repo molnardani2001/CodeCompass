@@ -693,21 +693,35 @@ public class CSharpQueryHandler : CsharpService.IAsync
     {
         switch (diagramId)
         {
-            case 999:
-                string astnodevalues = dbContext.CsharpAstNodes
-                    .Where(a => a.Path == fileId)
-                    .Select(a => a.AstValue)
-                    .First()
-                    .ToString();
-                /*string parent = dbContext.
-                    .Where(a => (a.id).ToString() == fileId)
-                    .Select(a => a.parent)
-                    .ToString();
-                string parentInfo = dbContext.File
-                    .Where(a => parent == a.id.ToString())
-                    .ToString();
-                */
-                return await Task.FromResult(astnodevalues);
+            case 0: //FILE_USAGES
+                //Gather files(IDs) which our file uses
+                var uses = dbContext.CsharpEdges
+                    .Where(a => a.From.ToString() == fileId &&
+                                a.Type            == EdgeType.USE)
+                    .Select(a => a.To)
+                    .ToList();
+                
+                //Gather files(IDs) which use our file
+                var revUses = dbContext.CsharpEdges
+                    .Where(a => a.To.ToString() == fileId &&
+                                a.Type          == EdgeType.USE)
+                    .Select(a => a.From)
+                    .ToList();
+
+                //Store files(IDs) into string, uses and usedBys separated by ":"
+                string data = "";
+                foreach(var use in uses)
+                {
+                    data += $" {use.ToString()}";
+                }
+                data += ":";
+                foreach(var revUse in revUses)
+                {
+                    data += $"{revUse.ToString()} ";
+                }
+                data.Trim();
+
+                return await Task.FromResult(data);
                 break;
         }
         

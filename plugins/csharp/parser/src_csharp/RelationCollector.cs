@@ -48,7 +48,7 @@ namespace CSharpParser
                 symbolFilePath == usageFilePath) return;
 
 
-            WriteLine($"Value usagePath: {usageFilePath}; symbolFilePath: {symbolFilePath}");
+            WriteLine($"Value usageFilePath: {usageFilePath}; symbolFilePath: {symbolFilePath}");
 
             CsharpEdge csharpEdge = new CsharpEdge();
             csharpEdge.From = fnvHash(usageFilePath);
@@ -64,7 +64,8 @@ namespace CSharpParser
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             var methodSymbol = Model.GetSymbolInfo(node).Symbol as IMethodSymbol;
-             if (methodSymbol == null || methodSymbol.ContainingAssembly.Identity != Model.Compilation.Assembly.Identity) return;
+             if (methodSymbol == null || 
+                 methodSymbol.ContainingAssembly.Identity != Model.Compilation.Assembly.Identity) return;
 
             var symbolFilePath = methodSymbol.Locations.FirstOrDefault(loc => loc.IsInSource)?.SourceTree?.FilePath;
             var usageFilePath = node.SyntaxTree.FilePath;

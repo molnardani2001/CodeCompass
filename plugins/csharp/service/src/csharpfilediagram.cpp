@@ -89,7 +89,8 @@ std::string CsharpFileDiagram::getComponentUsersDiagramLegend()
 
   return builder.getOutput();
 }
-
+*/
+/*
 void CsharpFileDiagram::getIncludeDependencyDiagram(
   util::Graph& graph_,
   const core::FileId& fileId_)
@@ -97,7 +98,8 @@ void CsharpFileDiagram::getIncludeDependencyDiagram(
   core::FileInfo fileInfo;
   _projectHandler.getFileInfo(fileInfo, fileId_);
   util::Graph::Node currentNode = addNode(graph_, fileInfo);
-
+*/
+  /*
   util::bfsBuild(graph_, currentNode,std::bind(&CsharpFileDiagram::getUsages,
     this, std::placeholders::_1, std::placeholders::_2),
     {}, usagesEdgeDecoration, 3);
@@ -105,16 +107,16 @@ void CsharpFileDiagram::getIncludeDependencyDiagram(
   util::bfsBuild(graph_, currentNode,std::bind(&CsharpFileDiagram::getRevUsages,
     this, std::placeholders::_1, std::placeholders::_2),
     {}, revUsagesEdgeDecoration, 3);
-  
-  util::bfsBuild(graph_, currentNode, std::bind(&CsharpFileDiagram::getProvides,
+  */
+  /* util::bfsBuild(graph_, currentNode, std::bind(&CsharpFileDiagram::getProvides,
     this, std::placeholders::_1, std::placeholders::_2),
     {}, usagesEdgeDecoration, 3);
 
   util::bfsBuild(graph_, currentNode, std::bind(&CsharpFileDiagram::getRevProvides,
     this, std::placeholders::_1, std::placeholders::_2),
     {}, revUsagesEdgeDecoration, 3);
-}
-
+}*/
+/*
 std::string CsharpFileDiagram::getIncludeDependencyDiagramLegend()
 {
   util::LegendBuilder builder("Include Dependency Diagram");
@@ -654,7 +656,7 @@ std::vector<util::Graph::Node> CsharpFileDiagram::getUsedFiles(
 {
   std::vector<util::Graph::Node> usages;
 
-  std::vector<core::FileId> fileIds = getUsedFileIds(graph_, node_, reverse_);
+  // std::vector<core::FileId> fileIds = getUsedFileIds(graph_, node_, reverse_);
 
   for (const core::FileId& fileId: fileIds)
   {
