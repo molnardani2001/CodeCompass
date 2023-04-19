@@ -56,9 +56,11 @@ public:
   /**
    * This diagram shows of the `#include` file dependencies.
    */
-  //void getIncludeDependencyDiagram(
-  //  util::Graph& graph_,
-  //  const core::FileId& fileId_);
+  void getIncludeDependencyDiagram(
+    util::Graph& graph_,
+    const core::FileId& fileId_,
+    const std::vector<core::FileId>& useIds,
+    const std::vector<core::FileId>& revUseIds);
 
   /**
    * This function creates legend for the Include dependency diagram.
@@ -116,6 +118,10 @@ public:
 
 private:
   typedef std::vector<std::pair<std::string, std::string>> Decoration;
+
+  std::vector<util::Graph::Node> getNodesFromIds(
+  util::Graph& graph,
+  const std::vector<core::FileId>& fileIds);
 
   /**
    * This function adds a node which represents a File node. The label of the

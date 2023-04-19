@@ -229,8 +229,8 @@ void CsharpServiceHandler::getFileDiagram(
       {
           LOG(info) << "REVUSE_IDs: " << it ;   
       }
-      //LOG(info) << "USE_IDs: " << useIds[0] ;//<< " REVUSE_IDs: " << revUseIds[0];
-      //diagram.getIncludeDependencyDiagram()
+      
+      diagram.getIncludeDependencyDiagram(graph,fileId_,useIds,revUseIds);
       break;
   }
 
