@@ -4,6 +4,10 @@
 #include <model/file.h>
 #include <model/file-odb.hxx>
 
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+
 #include "csharpfilediagram.h"
 
 namespace cc
@@ -203,7 +207,29 @@ void CsharpServiceHandler::getFileDiagram(
       //Gather data related to FILE_USAGES diagram
       //Format $"{uses}:{revUses}"
       _csharpQueryHandler.getFileDiagram(data, fileId_, diagramId_);
+      boost::trim(data);
       LOG(info) << "FILE USAGES data: " << data; 
+
+      //Convert data into FileId vectors
+      std::string delimiter = ":";
+      std::string uses = data.substr(0,data.find(delimiter));
+      std::string revUses = data.substr(data.find(delimiter) + 1, std::string::npos);
+
+      std::vector<core::FileId> useIds;
+      boost::split(useIds, uses, boost::is_any_of(" "), boost::token_compress_on);
+
+      std::vector<core::FileId> revUseIds;
+      boost::split(revUseIds, revUses, boost::is_any_of(" "), boost::token_compress_on);
+
+      for (auto &it : useIds)
+      {
+          LOG(info) << "USE_IDs: " << it ;   
+      }
+      for (auto &it : revUseIds)
+      {
+          LOG(info) << "REVUSE_IDs: " << it ;   
+      }
+      //LOG(info) << "USE_IDs: " << useIds[0] ;//<< " REVUSE_IDs: " << revUseIds[0];
       //diagram.getIncludeDependencyDiagram()
       break;
   }
