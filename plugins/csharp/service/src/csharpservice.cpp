@@ -217,9 +217,17 @@ void CsharpServiceHandler::getFileDiagram(
 
       std::vector<core::FileId> useIds;
       boost::split(useIds, uses, boost::is_any_of(" "), boost::token_compress_on);
+      if (useIds.size() == 1 && useIds[0].empty()) {
+        useIds.clear();
+      }
+      LOG(info) << "useIds size: " << useIds.size();
 
       std::vector<core::FileId> revUseIds;
       boost::split(revUseIds, revUses, boost::is_any_of(" "), boost::token_compress_on);
+      if (revUseIds.size() == 1 && revUseIds[0].empty()) {
+        revUseIds.clear();
+      }
+      LOG(info) << "revUseIds size: " << revUseIds.size();
 
       for (auto &it : useIds)
       {
