@@ -695,37 +695,229 @@ public class CSharpQueryHandler : CsharpService.IAsync
         {
             case 0: //FILE_USAGES
                 //Gather files(IDs) which our file uses
-                var uses = dbContext.CsharpEdges
-                    .Where(a => a.From.ToString() == fileId &&
-                                a.Type            == EdgeType.USE)
-                    .Select(a => a.To)
-                    .ToList();
+                // var uses = dbContext.CsharpEdges
+                //     .Where(a => a.From.ToString() == fileId &&
+                //                 a.Type            == EdgeType.USE)
+                //     .Select(a => a.To)
+                //     .ToList();
                 
-                //Gather files(IDs) which use our file
-                var revUses = dbContext.CsharpEdges
-                    .Where(a => a.To.ToString() == fileId &&
-                                a.Type          == EdgeType.USE)
-                    .Select(a => a.From)
-                    .ToList();
+                // //Gather files(IDs) which use our file
+                // var revUses = dbContext.CsharpEdges
+                //     .Where(a => a.To.ToString() == fileId &&
+                //                 a.Type          == EdgeType.USE)
+                //     .Select(a => a.From)
+                //     .ToList();
 
-                //Store files(IDs) into string, uses and usedBys separated by ":"
-                string data = "";
-                foreach(var use in uses)
-                {
-                    data += $" {use.ToString()}";
-                }
-                data += ":";
-                foreach(var revUse in revUses)
-                {
-                    data += $"{revUse.ToString()} ";
-                }
-                data.Trim();
+                // //Store files(IDs) into string, uses and usedBys separated by ":"
+                // string data = "";
+                // foreach(var use in uses)
+                // {
+                //     data += $" {use.ToString()}";
+                // }
+                // data += ":";
+                // foreach(var revUse in revUses)
+                // {
+                //     data += $"{revUse.ToString()} ";
+                // }
+                // data.Trim();
 
-                return await Task.FromResult(data);
+                // var table = dbContext.CsharpEdges
+                //             .Where(a => a.Type == EdgeType.USE)
+                //             .ToList();
+                // var edges = new Dictionary<string, List<(string, string)>>();
+                // foreach (var row in table)
+                // {
+                //     string from = row.From.ToString();
+                //     string to = row.To.ToString();
+                //     EdgeType type = row.Type;
+
+                //     if (!edges.ContainsKey(from))
+                //     {
+                //         edges[from] = new List<(string, string)>();
+                //     }
+                //     edges[from].Add((from,to));
+
+                //     if (!edges.ContainsKey(to))
+                //     {
+                //         edges[to] = new List<(string,string)>();
+                //     }
+                //     edges[to].Add((from, to));
+                // }
+                // foreach (var entry in edges)
+                // {
+                //     var id = entry.Key;
+                //     var fileEdges = entry.Value;
+                //     Console.WriteLine($"File ID: {id}");
+                //     Console.WriteLine("Edges:");
+
+                //     foreach(var edge in fileEdges)
+                //     {
+                //         Console.WriteLine($"From: {edge.Item1}, To: {edge.Item2}");
+                //     }
+
+                //     Console.WriteLine();
+                // }
+
+                // var reachableFilesDict = new Dictionary<string, List<string>>();
+                // foreach (var file in edges.Keys)
+                // {
+                //     var reachableFiles = new List<string>();
+                //     TraverseGraph(file, edges, reachableFiles, new HashSet<string>());
+                //     reachableFilesDict[file] = reachableFiles;
+                // }
+                // foreach (var entry in reachableFilesDict)
+                // {
+                //     var file = entry.Key;
+                //     var filesReachable = entry.Value;
+                //     Console.WriteLine($"File ID: {file}");
+                //     Console.WriteLine("Reachable Files:");
+
+                //     foreach(var fileR in filesReachable)
+                //     {
+                //         Console.WriteLine($"{fileR}");
+                //     }
+
+                //     Console.WriteLine();
+                // }
+
+                return await Task.FromResult("");
                 break;
         }
         
         return await Task.FromResult("File Diagram");
     }
+
+    public async Task<Dictionary<string, List<string>>> getFileUsagesAsync(string fileId, bool reverse = false,
+        CancellationToken cancellationToken = default(CancellationToken))
+    {
+        if (!reverse)
+        {
+            return await Task.FromResult(BFSBuild(fileId,getFileUsageIds,3));
+        }
+        else
+        {
+            return await Task.FromResult(BFSBuild(fileId,getFileRevUsageIds,3));
+        }
+    }
+
+    private List<string> getFileUsageIds(string fileId)
+    {
+        //Gather files(IDs) which our file uses
+        return dbContext.CsharpEdges
+            .Where(a => a.From.ToString() == fileId &&
+                        a.Type            == EdgeType.USE)
+            .Select(a => a.To.ToString())
+            .ToList();
+    }
+
+    private List<string> getFileRevUsageIds(string fileId)
+    {
+        //Gather files(IDs) which use our file
+        return dbContext.CsharpEdges
+            .Where(a => a.To.ToString() == fileId &&
+                        a.Type          == EdgeType.USE)
+            .Select(a => a.From.ToString())
+            .ToList();
+    }
+
+    public static Dictionary<string, List<string>> BFSBuild(
+        string startFile,
+        Func<string, List<string>> relations,
+        int level = -1)
+    {
+        var visitedFiles = new Dictionary<string, List<string>>();
+        visitedFiles[startFile] = new List<string>();
+
+        if (level < -1)
+        {
+            return visitedFiles;
+        }
+
+        int currentLevel = 0;
+        Queue<string> queue = new Queue<string>();
+        queue.Enqueue(startFile);
+
+        bool walkLevel = true;
+        while (queue.Count > 0 && walkLevel)
+        {
+            string currentFile = queue.Dequeue();
+
+            foreach (string to in relations(currentFile))
+            {
+                if (!visitedFiles.ContainsKey(to))
+                {
+                    visitedFiles[to] = new List<string>();
+                    queue.Enqueue(to);
+                }
+
+                visitedFiles[currentFile].Add(to);
+            }
+
+            currentLevel++;
+            if (level != -1)
+            {
+                walkLevel = currentLevel != level;
+            }
+        }
+
+        //LOG USED FILES
+        // foreach(var entry in visitedFiles)
+        // {
+        //     Console.WriteLine("Key: ", entry.Key);
+        //     Console.WriteLine("Values:");
+        //     foreach (string value in entry.Value)
+        //     {
+        //         Console.WriteLine(value);
+        //     }
+        // }
+        return visitedFiles;
+    }
+
+
+
+    // public static HashSet<Tuple<string,string>> BFSBuild(
+    //     string startFile,
+    //     Func<string, List<string>> relations,
+    //     int level = -1)
+    // {
+    //     var visitedFiles = new HashSet<Tuple<string,string>>();
+    //     visitedFiles.Add(Tuple.Create("", startFile));
+
+    //     if (level < -1)
+    //     {
+    //         return visitedFiles;
+    //     }
+
+    //     int currentLevel = 0;
+    //     Queue<string> queue = new Queue<string>();
+    //     queue.Enqueue(startFile);
+
+    //     bool walkLevel = true;
+    //     while (queue.Count > 0 && walkLevel)
+    //     {
+    //         string currentFile = queue.Dequeue();
+
+    //         foreach (string to in relations(currentFile))
+    //         {
+    //             var tuple = Tuple.Create(currentFile, to);
+    //             if (!visitedFiles.Contains(tuple))
+    //             {
+    //                 queue.Enqueue(to);
+    //                 visitedFiles.Add(tuple);
+    //             }
+    //         }
+
+    //         currentLevel++;
+    //         if (level != -1)
+    //         {
+    //             walkLevel = currentLevel != level;
+    //         }
+    //     }
+
+    //     System.Console.WriteLine(visitedFiles);
+    //     return visitedFiles;
+    // }
+
+
 
 }

@@ -94,50 +94,94 @@ std::string CsharpFileDiagram::getComponentUsersDiagramLegend()
 void CsharpFileDiagram::getIncludeDependencyDiagram(
   util::Graph& graph_,
   const core::FileId& fileId_,
-  const std::vector<core::FileId>& useIds,
-  const std::vector<core::FileId>& revUseIds)
+  const std::map<core::FileId, std::vector<core::FileId>>& useIds,
+  const std::map<core::FileId, std::vector<core::FileId>>& revUseIds)
 {
   core::FileInfo fileInfo;
   _projectHandler.getFileInfo(fileInfo, fileId_);
   util::Graph::Node currentNode = addNode(graph_, fileInfo);
 
+  // //create nodes for use cases
+  // if (!useIds.empty())
+  // {
+  //   std::vector<util::Graph::Node> usages;
+  //   for (const core::FileId& fileId: useIds)
+  //   {
+  //     core::FileInfo fileInfo;
+  //     _projectHandler.getFileInfo(fileInfo, fileId);
+
+  //     usages.push_back(addNode(graph_, fileInfo));
+  //     LOG(info) << "FILEID TO NODE:" << fileId;
+  //   }
+  //   for (const util::Graph::Node& use: usages)
+  //   {
+  //     decorateNode(graph_, use, sourceFileNodeDecoration);
+  //     util::Graph::Edge useEdge = graph_.createEdge(currentNode, use);
+  //     decorateEdge(graph_, useEdge, usagesEdgeDecoration);
+  //   }
+  // }
+
+  // //create nodes for revUse cases
+  // if (!revUseIds.empty())
+  // {
+  //   std::vector<util::Graph::Node> revUsages;
+  //   for (const core::FileId& fileId: revUseIds)
+  //   {
+  //     core::FileInfo fileInfo;
+  //     _projectHandler.getFileInfo(fileInfo, fileId);
+
+  //     revUsages.push_back(addNode(graph_, fileInfo));
+  //     LOG(info) << "FILEID TO NODE:" << fileId;
+  //   }
+  //   for (const util::Graph::Node& revUse: revUsages)
+  //   {
+  //     decorateNode(graph_, revUse, sourceFileNodeDecoration);
+  //     util::Graph::Edge revUseEdge = graph_.createEdge(currentNode, revUse);
+  //     decorateEdge(graph_, revUseEdge, revUsagesEdgeDecoration);
+  //   }
+  // }
+
   //create nodes for use cases
-  if (!useIds.empty())
+  for (const auto& entry : useIds)
   {
-    std::vector<util::Graph::Node> usages;
-    for (const core::FileId& fileId: useIds)
+    core::FileId fileId = entry.first;
+    core::FileInfo fileInfo;
+    _projectHandler.getFileInfo(fileInfo, fileId);
+    util::Graph::Node currentNode = addNode(graph_, fileInfo);
+    
+    for (const auto& value : entry.second)
     {
+      core::FileId fileId = value;
       core::FileInfo fileInfo;
       _projectHandler.getFileInfo(fileInfo, fileId);
+      util::Graph::Node toNode = addNode(graph_, fileInfo);
 
-      usages.push_back(addNode(graph_, fileInfo));
-      LOG(info) << "FILEID TO NODE:" << fileId;
-    }
-    for (const util::Graph::Node& use: usages)
-    {
-      decorateNode(graph_, use, sourceFileNodeDecoration);
-      util::Graph::Edge useEdge = graph_.createEdge(currentNode, use);
+      util::Graph::Edge useEdge = graph_.createEdge(currentNode, toNode);
       decorateEdge(graph_, useEdge, usagesEdgeDecoration);
+
     }
   }
 
-  //create nodes for revUse cases
-  if (!revUseIds.empty())
+  //create nodes for revuse cases
+  for (const auto& entry : revUseIds)
   {
-    std::vector<util::Graph::Node> revUsages;
-    for (const core::FileId& fileId: revUseIds)
+    core::FileId fileId = entry.first;
+    core::FileInfo fileInfo;
+    _projectHandler.getFileInfo(fileInfo, fileId);
+    util::Graph::Node currentNode = addNode(graph_, fileInfo);
+    decorateNode(graph_, currentNode, sourceFileNodeDecoration);
+    
+    for (const auto& value : entry.second)
     {
+      core::FileId fileId = value;
       core::FileInfo fileInfo;
       _projectHandler.getFileInfo(fileInfo, fileId);
+      util::Graph::Node toNode = addNode(graph_, fileInfo);
 
-      revUsages.push_back(addNode(graph_, fileInfo));
-      LOG(info) << "FILEID TO NODE:" << fileId;
-    }
-    for (const util::Graph::Node& revUse: revUsages)
-    {
-      decorateNode(graph_, revUse, sourceFileNodeDecoration);
-      util::Graph::Edge revUseEdge = graph_.createEdge(currentNode, revUse);
-      decorateEdge(graph_, revUseEdge, revUsagesEdgeDecoration);
+      decorateNode(graph_, toNode, sourceFileNodeDecoration);
+      util::Graph::Edge useEdge = graph_.createEdge(currentNode, toNode);
+      decorateEdge(graph_, useEdge, revUsagesEdgeDecoration);
+
     }
   }
 
@@ -771,17 +815,11 @@ util::Graph::Node CsharpFileDiagram::addNode(
   {
     decorateNode(graph_, node, binaryFileNodeDecoration);
   }
-  else if (fileInfo_.type == "CPP")
+  else if (fileInfo_.type == "CS")
   {
     std::string ext = boost::filesystem::extension(fileInfo_.path);
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-    if (ext == ".cpp" || ext == ".cxx" || ext == ".cc"  || ext == ".c")
-      decorateNode(graph_, node, sourceFileNodeDecoration);
-    else if (ext == ".hpp" || ext == ".hxx" || ext == ".hh"  || ext == ".h")
-      decorateNode(graph_, node, headerFileNodeDecoration);
-    else if (ext == ".o"  || ext == ".so" || ext == ".dll")
-      decorateNode(graph_, node, objectFileNodeDecoration);
+    decorateNode(graph_, node, sourceFileNodeDecoration);
   }
 
   return node;

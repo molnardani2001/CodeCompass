@@ -220,6 +220,14 @@ public:
     _service -> getFileDiagram(return_, fileId_, diagramId_);
   }
 
+  void getFileUsages(
+    std::map<std::string, std::vector<std::string>>& return_,
+    const core::FileId& fileId_,
+    const bool reverse_) override
+  {
+    _service -> getFileUsages(return_, fileId_, reverse_);
+  }
+
 private:
     std::unique_ptr<CsharpServiceIf> _service;
     static std::stringstream _thriftStream;
@@ -336,6 +344,12 @@ public:
   void getSyntaxHighlight(
     std::vector<SyntaxHighlight>& return_,
     const core::FileRange& range_) override;
+
+  // void getFileUsages(
+  //   std::map<std::string, std::vector<std::string>>& return_,
+  //   const core::FileId& fileId_,
+  //   const bool reverse_) override;
+  
 
 private:
 

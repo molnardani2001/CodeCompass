@@ -59,8 +59,8 @@ public:
   void getIncludeDependencyDiagram(
     util::Graph& graph_,
     const core::FileId& fileId_,
-    const std::vector<core::FileId>& useIds,
-    const std::vector<core::FileId>& revUseIds);
+    const std::map<std::string, std::vector<std::string>>& useIds,
+    const std::map<std::string, std::vector<std::string>>& revUseIds);
 
   /**
    * This function creates legend for the Include dependency diagram.

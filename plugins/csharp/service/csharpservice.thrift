@@ -61,4 +61,7 @@ service CsharpService
 
   string getFileDiagram(1:common.FileId fileId, 2:i32 diagramId)
     throws (1:common.InvalidId exId, 2:common.Timeout exLong)
+
+  map<string, list<string>> getFileUsages(1:common.FileId fileId, 2:bool reverse)
+    throws (1:common.InvalidId exId, 2:common.Timeout exLong)
 }

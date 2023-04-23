@@ -199,46 +199,57 @@ void CsharpServiceHandler::getFileDiagram(
 
   switch (diagramId_){
     case 0: //FILE_USAGES
-      /* model::FilePtr file=  _transaction([&, this](){
-        return _db->query_one<model::File>(
-        FileQuery::id == std::stoull(fileId_));
-      }); */
-      std::string data;
-      //Gather data related to FILE_USAGES diagram
-      //Format $"{uses}:{revUses}"
-      _csharpQueryHandler.getFileDiagram(data, fileId_, diagramId_);
-      boost::trim(data);
-      LOG(info) << "FILE USAGES data: " << data; 
+      // std::string data;
+      // //Gather data related to FILE_USAGES diagram
+      // //Format $"{uses}:{revUses}"
+      // _csharpQueryHandler.getFileDiagram(data, fileId_, diagramId_);
+      // boost::trim(data);
+      // LOG(info) << "FILE USAGES data: " << data; 
 
-      //Convert data into FileId vectors
-      std::string delimiter = ":";
-      std::string uses = data.substr(0,data.find(delimiter));
-      std::string revUses = data.substr(data.find(delimiter) + 1, std::string::npos);
+      // //Convert data into FileId vectors
+      // std::string delimiter = ":";
+      // std::string uses = data.substr(0,data.find(delimiter));
+      // std::string revUses = data.substr(data.find(delimiter) + 1, std::string::npos);
 
-      std::vector<core::FileId> useIds;
-      boost::split(useIds, uses, boost::is_any_of(" "), boost::token_compress_on);
-      if (useIds.size() == 1 && useIds[0].empty()) {
-        useIds.clear();
-      }
-      LOG(info) << "useIds size: " << useIds.size();
+      // std::vector<core::FileId> useIds;
+      // boost::split(useIds, uses, boost::is_any_of(" "), boost::token_compress_on);
+      // if (useIds.size() == 1 && useIds[0].empty()) {
+      //   useIds.clear();
+      // }
+      // LOG(info) << "useIds size: " << useIds.size();
 
-      std::vector<core::FileId> revUseIds;
-      boost::split(revUseIds, revUses, boost::is_any_of(" "), boost::token_compress_on);
-      if (revUseIds.size() == 1 && revUseIds[0].empty()) {
-        revUseIds.clear();
-      }
-      LOG(info) << "revUseIds size: " << revUseIds.size();
+      // std::vector<core::FileId> revUseIds;
+      // boost::split(revUseIds, revUses, boost::is_any_of(" "), boost::token_compress_on);
+      // if (revUseIds.size() == 1 && revUseIds[0].empty()) {
+      //   revUseIds.clear();
+      // }
+      // LOG(info) << "revUseIds size: " << revUseIds.size();
 
-      for (auto &it : useIds)
-      {
-          LOG(info) << "USE_IDs: " << it ;   
-      }
-      for (auto &it : revUseIds)
-      {
-          LOG(info) << "REVUSE_IDs: " << it ;   
-      }
+      // for (auto &it : useIds)
+      // {
+      //     LOG(info) << "USE_IDs: " << it ;   
+      // }
+      // for (auto &it : revUseIds)
+      // {
+      //     LOG(info) << "REVUSE_IDs: " << it ;   
+      // }
       
+      // diagram.getIncludeDependencyDiagram(graph,fileId_,useIds,revUseIds);
+
+      std::map<std::string, std::vector<std::string>> useIds;
+      _csharpQueryHandler.getFileUsages(useIds,fileId_,false);
+      // for (const auto& entry : data){
+      //   LOG(info) << "Key: " << entry.first;
+      //   LOG(info) << "Value:";
+      //   for (const auto& value : entry.second){
+      //     LOG(info) << value;
+      //   }
+      // }
+      std::map<std::string, std::vector<std::string>> revUseIds;
+      _csharpQueryHandler.getFileUsages(revUseIds,fileId_,true);
+
       diagram.getIncludeDependencyDiagram(graph,fileId_,useIds,revUseIds);
+
       break;
   }
 
