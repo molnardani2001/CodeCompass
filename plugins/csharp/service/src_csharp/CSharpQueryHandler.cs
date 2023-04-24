@@ -792,11 +792,11 @@ public class CSharpQueryHandler : CsharpService.IAsync
     {
         if (!reverse)
         {
-            return await Task.FromResult(BFSBuild(fileId,getFileUsageIds,3));
+            return await Task.FromResult(BFSBuild(fileId,getFileUsageIds));
         }
         else
         {
-            return await Task.FromResult(BFSBuild(fileId,getFileRevUsageIds,3));
+            return await Task.FromResult(BFSBuild(fileId,getFileRevUsageIds));
         }
     }
 

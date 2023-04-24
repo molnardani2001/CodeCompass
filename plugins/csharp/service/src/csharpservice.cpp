@@ -175,13 +175,12 @@ void CsharpServiceHandler::getFileDiagramTypes(
   {
     if (file->type == model::File::DIRECTORY_TYPE)
     {
-      //return_["Internal architecture of this module"] = SUBSYSTEM_DEPENDENCY;
-      //return_["This module depends on"]               = EXTERNAL_DEPENDENCY;
-      //return_["Users of this module"]                 = EXTERNAL_USERS;
+      return_["Internal architecture of this module"] = SUBSYSTEM_DEPENDENCY;
+      return_["Users of this module"]                 = EXTERNAL_USERS;
     }
     else if (file->type == "CS")
     {
-      return_["File usage diagram"] = FILE_USAGES;
+      return_["File usage"] = FILE_USAGES;
     }
   }
 }
@@ -198,7 +197,7 @@ void CsharpServiceHandler::getFileDiagram(
   graph.setAttribute("rankdir", "LR");
 
   switch (diagramId_){
-    case 0: //FILE_USAGES
+    case FILE_USAGES: //FILE_USAGES
       // std::string data;
       // //Gather data related to FILE_USAGES diagram
       // //Format $"{uses}:{revUses}"
