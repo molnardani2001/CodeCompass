@@ -87,9 +87,9 @@ public:
    * of the queried module. This diagram is useful to understand the
    * relationships of the subdirectories (submodules) of a module.
    */
-  //void getSubsystemDependencyDiagram(
-  //   util::Graph& graph_,
-  //  const core::FileId& fileId_);
+  void getSubsystemDependencyDiagram(
+    util::Graph& graph_,
+   const core::FileId& fileId_);
 
   /**
    * This function creates legend for the Subsystem dependency diagram.
@@ -199,9 +199,9 @@ private:
    * @param fileNode_ Graph file node object which represents a file object.
    * @return Subdirectory graph nodes.
    */
-  //std::vector<util::Graph::Node> getSubDirs(
-  //  util::Graph& graph_,
-  //  const util::Graph::Node& fileNode_);
+  std::vector<util::Graph::Node> getSubDirs(
+   util::Graph& graph_,
+   const util::Graph::Node& fileNode_);
 
   /**
    * This function creates graph nodes for each files which files implements

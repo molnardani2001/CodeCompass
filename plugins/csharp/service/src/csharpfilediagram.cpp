@@ -369,7 +369,7 @@ std::string CsharpFileDiagram::getInterfaceDiagramLegend()
 
   return builder.getOutput();
 }
-
+*/
 void CsharpFileDiagram::getSubsystemDependencyDiagram(
   util::Graph& graph_,
   const core::FileId& fileId_)
@@ -384,29 +384,8 @@ void CsharpFileDiagram::getSubsystemDependencyDiagram(
     std::placeholders::_2), {}, subdirEdgeDecoration);
 
   subdirs.insert(currentNode);
-
-  for (const util::Graph::Node& subdir : subdirs)
-  {
-    for (const util::Graph::Node& impl : getImplements(graph_, subdir))
-      if (subdirs.find(impl) != subdirs.end())
-      {
-        util::Graph::Edge edge = graph_.createEdge(subdir, impl);
-        decorateEdge(graph_, edge, implementsEdgeDecoration);
-      }
-      else
-        graph_.delNode(impl);
-
-    for (const util::Graph::Node& dep : getDepends(graph_, subdir))
-      if (subdirs.find(dep) != subdirs.end())
-      {
-        util::Graph::Edge edge = graph_.createEdge(subdir, dep);
-        decorateEdge(graph_, edge, dependsEdgeDecoration);
-      }
-      else
-        graph_.delNode(dep);
-  }
 }
-
+/*
 std::string CsharpFileDiagram::getSubsystemDependencyDiagramLegend()
 {
   util::LegendBuilder builder("Subsystem Dependency Diagram");
@@ -466,8 +445,8 @@ std::vector<util::Graph::Node> CsharpFileDiagram::getRevIncludes(
 {
   return getIncludedFiles(graph_, node_, true);
 }
-
-std::vector<util::Graph::Node> FileDiagram::getSubDirs(
+*/
+std::vector<util::Graph::Node> CsharpFileDiagram::getSubDirs(
   util::Graph& graph_,
   const util::Graph::Node& node_)
 {
@@ -489,7 +468,7 @@ std::vector<util::Graph::Node> FileDiagram::getSubDirs(
 
   return usages;
 }
-
+/*
 std::vector<util::Graph::Node> CsharpFileDiagram::getImplements(
   util::Graph& graph_,
   const util::Graph::Node& node_)

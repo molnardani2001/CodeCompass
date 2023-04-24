@@ -198,6 +198,7 @@ void CsharpServiceHandler::getFileDiagram(
 
   switch (diagramId_){
     case FILE_USAGES: //FILE_USAGES
+    {
       // std::string data;
       // //Gather data related to FILE_USAGES diagram
       // //Format $"{uses}:{revUses}"
@@ -250,6 +251,12 @@ void CsharpServiceHandler::getFileDiagram(
       diagram.getIncludeDependencyDiagram(graph,fileId_,useIds,revUseIds);
 
       break;
+    }
+    case SUBSYSTEM_DEPENDENCY:
+    {
+      diagram.getSubsystemDependencyDiagram(graph,fileId_);
+      break;
+    }
   }
 
   if (graph.nodeCount() != 0)
