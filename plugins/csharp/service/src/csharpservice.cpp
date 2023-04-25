@@ -17,6 +17,10 @@ namespace service
 namespace language
 {
 typedef odb::query<cc::model::File> FileQuery;
+typedef odb::result<model::File> FileResult;
+typedef std::map<std::string, std::vector<std::string>> Usages;
+//typedef std::map<std::string, std::vector<std::map<std::string, std::vector<std::string>>>> DirectoryUsages;
+typedef std::map<std::string, std::vector<Usages>> DirectoryUsages;
 namespace fs = boost::filesystem;
 namespace bp = boost::process;
 namespace pt = boost::property_tree;
@@ -236,7 +240,7 @@ void CsharpServiceHandler::getFileDiagram(
       
       // diagram.getIncludeDependencyDiagram(graph,fileId_,useIds,revUseIds);
 
-      std::map<std::string, std::vector<std::string>> useIds;
+      Usages useIds;
       _csharpQueryHandler.getFileUsages(useIds,fileId_,false);
       // for (const auto& entry : data){
       //   LOG(info) << "Key: " << entry.first;
@@ -245,7 +249,7 @@ void CsharpServiceHandler::getFileDiagram(
       //     LOG(info) << value;
       //   }
       // }
-      std::map<std::string, std::vector<std::string>> revUseIds;
+      Usages revUseIds;
       _csharpQueryHandler.getFileUsages(revUseIds,fileId_,true);
 
       diagram.getIncludeDependencyDiagram(graph,fileId_,useIds,revUseIds);
@@ -255,6 +259,41 @@ void CsharpServiceHandler::getFileDiagram(
     case SUBSYSTEM_DEPENDENCY:
     {
       diagram.getSubsystemDependencyDiagram(graph,fileId_);
+      break;
+    }
+    case EXTERNAL_USERS:
+    {
+      DirectoryUsages dirRevUsages; 
+      
+      FileResult sub =_transaction([&, this]{
+        return _db->query<model::File>(
+              FileQuery::parent == std::stoull(fileId_) &&
+              FileQuery::type == model::File::DIRECTORY_TYPE);
+      });
+      //iterate on subddirectories and add a BFS to each CS file
+      //under the subdir
+      FileResult css;
+      for (const model::File& subdir : sub)
+      {
+        css = _transaction([&, this]{
+          return _db->query<model::File>(
+                FileQuery::parent == subdir.id &&
+                FileQuery::type == "CS");
+        });
+
+        std::vector<Usages> revs;
+        Usages rev;
+        for (const model::File& cs : css)
+        {
+          std::string id = std::to_string(cs.id);
+          LOG(info) << "Converted CS ID: " << id;
+          _csharpQueryHandler.getFileUsages(rev,id,true);
+          revs.push_back(rev);
+          rev.clear();
+        }
+        dirRevUsages[std::to_string(subdir.id)] = revs;
+        revs.clear();
+      }
       break;
     }
   }
