@@ -238,39 +238,47 @@ void CsharpServiceHandler::getFileDiagram(
             FileQuery::id == std::stoull(fileId_)
           );
       });
-      LOG(info) << "6";
-      FileResult directories = _transaction([&,this]{
-        return _db->query<model::File>(
-              FileQuery::type == model::File::DIRECTORY_TYPE);
+      LOG(info) << "6" << directory->path;
+      // FileResult directories = _transaction([&,this]{
+      //   return _db->query<model::File>(
+      //         FileQuery::type == model::File::DIRECTORY_TYPE);
+      // });
+
+      std::vector<model::FilePtr> directories;
+      util::OdbTransaction {_db} ([&]() {
+        FileResult res = _db->query<model::File>(
+          FileQuery::type == model::File::DIRECTORY_TYPE);
+        for (auto fp : res)
+          directories.push_back(std::make_shared<model::File>(std::move(fp)));
       });
       LOG(info) << "7";
-      std::vector<model::File> sub;
-      LOG(info) << "71";
-      if (!directories.empty())
-      {
-        if (directory)
-        {
+      std::vector<model::FilePtr> sub;
+      // 
+      // 
+      // 
+      //   
+      //   
           for (const auto& dir : directories)
-          {
-            LOG(info) << "72";
-            if (dir.path.find(directory->path) != std::string::npos) 
-            {
-              LOG(info) << "73";
-                sub.push_back(dir);
-                LOG(info) << "74";
-            }
-            LOG(info) << "75";
+           {
+             LOG(info) << "71";
+      //       if (dir.path.find(directory->path) != std::string::npos) 
+      //       {
+      //         LOG(info) << "72";
+      //           sub.push_back(dir);
+      //           LOG(info) << "73";
+      //       }
+      //       LOG(info) << "74";
           }
-        }
-        else
-        {
-          LOG(info) << "DIRECTORY ERROR";
-        }
-      }
-      else
-      {
-        LOG(info) << "DIRECTORIES EMPTY";
-      }
+      //   
+      //   
+      //   
+      //    
+      //   
+      // 
+      // 
+      // 
+      //   
+      // 
       LOG(info) << "8";
       // FileResult sub =_transaction([&, this]{
       //   return _db->query<model::File>(
@@ -280,29 +288,31 @@ void CsharpServiceHandler::getFileDiagram(
       // iterate on subddirectories and add a BFS to each CS file
       // under the subdir
       
-      FileResult css;
+      std::vector<model::FilePtr> css;
       std::vector<Usages> revs;
       Usages rev;
       LOG(info) << "9";
-      for (const model::File& subdir : sub)
+      for (const model::FilePtr& subdir : sub)
       {
         LOG(info) << "10";
-        css = _transaction([&, this]{
-          return _db->query<model::File>(
-                FileQuery::parent == subdir.id &&
+        util::OdbTransaction {_db} ([&](){
+          FileResult res = _db->query<model::File>(
+                FileQuery::parent == subdir->id &&
                 FileQuery::type == "CS");
+          for (auto fp : res)
+            css.push_back(std::make_shared<model::File>(std::move(fp)));
         });
         LOG(info) << "11";
-        for (const model::File& cs : css)
+        for (const model::FilePtr& cs : css)
         {
-          std::string id = std::to_string(cs.id);
+          std::string id = std::to_string(cs->id);
           LOG(info) << "Converted CS ID: " << id;
           _csharpQueryHandler.getFileUsages(rev,id,true);
           revs.push_back(rev);
           rev.clear();
         }
         LOG(info) << "12";
-        dirRevUsages[std::to_string(subdir.id)] = revs;
+        dirRevUsages[std::to_string(subdir->id)] = revs;
         revs.clear();
       }
       LOG(info) << "13";
