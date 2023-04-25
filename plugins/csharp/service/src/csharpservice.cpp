@@ -197,8 +197,11 @@ void CsharpServiceHandler::getFileDiagram(
   LOG(info) << "getFileDiagram";
 
   CsharpFileDiagram diagram(_db,_datadir, _context);
+  LOG(info) << "1";
   util::Graph graph;
+  LOG(info) << "2";
   graph.setAttribute("rankdir", "LR");
+  LOG(info) << "3";
 
   switch (diagramId_){
     case FILE_USAGES: //FILE_USAGES
@@ -226,26 +229,70 @@ void CsharpServiceHandler::getFileDiagram(
     }
     case EXTERNAL_USERS:
     {
+      LOG(info) << "4";
       DirectoryUsages dirRevUsages; 
-      FileResult sub =_transaction([&, this]{
+      LOG(info) << "5";
+
+      model::FilePtr directory = _transaction([&,this]{
+          return _db->query_one<model::File>(
+            FileQuery::id == std::stoull(fileId_)
+          );
+      });
+      LOG(info) << "6";
+      FileResult directories = _transaction([&,this]{
         return _db->query<model::File>(
-              FileQuery::parent == std::stoull(fileId_) &&
               FileQuery::type == model::File::DIRECTORY_TYPE);
       });
-      //iterate on subddirectories and add a BFS to each CS file
-      //under the subdir
+      LOG(info) << "7";
+      std::vector<model::File> sub;
+      LOG(info) << "71";
+      if (!directories.empty())
+      {
+        if (directory)
+        {
+          for (const auto& dir : directories)
+          {
+            LOG(info) << "72";
+            if (dir.path.find(directory->path) != std::string::npos) 
+            {
+              LOG(info) << "73";
+                sub.push_back(dir);
+                LOG(info) << "74";
+            }
+            LOG(info) << "75";
+          }
+        }
+        else
+        {
+          LOG(info) << "DIRECTORY ERROR";
+        }
+      }
+      else
+      {
+        LOG(info) << "DIRECTORIES EMPTY";
+      }
+      LOG(info) << "8";
+      // FileResult sub =_transaction([&, this]{
+      //   return _db->query<model::File>(
+      //         FileQuery::parent == std::stoull(fileId_) &&
+      //         FileQuery::type == model::File::DIRECTORY_TYPE);
+      //});
+      // iterate on subddirectories and add a BFS to each CS file
+      // under the subdir
       
       FileResult css;
       std::vector<Usages> revs;
       Usages rev;
+      LOG(info) << "9";
       for (const model::File& subdir : sub)
       {
+        LOG(info) << "10";
         css = _transaction([&, this]{
           return _db->query<model::File>(
                 FileQuery::parent == subdir.id &&
                 FileQuery::type == "CS");
         });
-
+        LOG(info) << "11";
         for (const model::File& cs : css)
         {
           std::string id = std::to_string(cs.id);
@@ -254,9 +301,11 @@ void CsharpServiceHandler::getFileDiagram(
           revs.push_back(rev);
           rev.clear();
         }
+        LOG(info) << "12";
         dirRevUsages[std::to_string(subdir.id)] = revs;
         revs.clear();
       }
+      LOG(info) << "13";
       break;
     }
   }
