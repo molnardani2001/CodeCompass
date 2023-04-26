@@ -31,6 +31,8 @@ typedef odb::query<model::BuildSource> SourceQuery;
 typedef odb::result<model::BuildSource> SourceResult;*/
 typedef odb::query<model::File> FileQuery;
 typedef odb::result<model::File> FileResult;
+typedef std::map<std::string, std::vector<std::string>> Usages;
+typedef std::map<std::string, std::vector<Usages>> DirectoryUsages;
 
 CsharpFileDiagram::CsharpFileDiagram(
   std::shared_ptr<odb::database> db_,
@@ -94,55 +96,16 @@ std::string CsharpFileDiagram::getComponentUsersDiagramLegend()
 void CsharpFileDiagram::getIncludeDependencyDiagram(
   util::Graph& graph_,
   const core::FileId& fileId_,
-  const std::map<core::FileId, std::vector<core::FileId>>& useIds,
-  const std::map<core::FileId, std::vector<core::FileId>>& revUseIds)
+  const Usages& useIds_,
+  const Usages& revUseIds_)
 {
   core::FileInfo fileInfo;
   _projectHandler.getFileInfo(fileInfo, fileId_);
   util::Graph::Node currentNode = addNode(graph_, fileInfo);
-
-  // //create nodes for use cases
-  // if (!useIds.empty())
-  // {
-  //   std::vector<util::Graph::Node> usages;
-  //   for (const core::FileId& fileId: useIds)
-  //   {
-  //     core::FileInfo fileInfo;
-  //     _projectHandler.getFileInfo(fileInfo, fileId);
-
-  //     usages.push_back(addNode(graph_, fileInfo));
-  //     LOG(info) << "FILEID TO NODE:" << fileId;
-  //   }
-  //   for (const util::Graph::Node& use: usages)
-  //   {
-  //     decorateNode(graph_, use, sourceFileNodeDecoration);
-  //     util::Graph::Edge useEdge = graph_.createEdge(currentNode, use);
-  //     decorateEdge(graph_, useEdge, usagesEdgeDecoration);
-  //   }
-  // }
-
-  // //create nodes for revUse cases
-  // if (!revUseIds.empty())
-  // {
-  //   std::vector<util::Graph::Node> revUsages;
-  //   for (const core::FileId& fileId: revUseIds)
-  //   {
-  //     core::FileInfo fileInfo;
-  //     _projectHandler.getFileInfo(fileInfo, fileId);
-
-  //     revUsages.push_back(addNode(graph_, fileInfo));
-  //     LOG(info) << "FILEID TO NODE:" << fileId;
-  //   }
-  //   for (const util::Graph::Node& revUse: revUsages)
-  //   {
-  //     decorateNode(graph_, revUse, sourceFileNodeDecoration);
-  //     util::Graph::Edge revUseEdge = graph_.createEdge(currentNode, revUse);
-  //     decorateEdge(graph_, revUseEdge, revUsagesEdgeDecoration);
-  //   }
-  // }
+  decorateNode(graph_, currentNode, centerNodeDecoration);
 
   //create nodes for use cases
-  for (const auto& entry : useIds)
+  for (const auto& entry : useIds_)
   {
     core::FileId fileId = entry.first;
     core::FileInfo fileInfo;
@@ -163,13 +126,12 @@ void CsharpFileDiagram::getIncludeDependencyDiagram(
   }
 
   //create nodes for revuse cases
-  for (const auto& entry : revUseIds)
+  for (const auto& entry : revUseIds_)
   {
     core::FileId fileId = entry.first;
     core::FileInfo fileInfo;
     _projectHandler.getFileInfo(fileInfo, fileId);
     util::Graph::Node currentNode = addNode(graph_, fileInfo);
-    decorateNode(graph_, currentNode, sourceFileNodeDecoration);
     
     for (const auto& value : entry.second)
     {
@@ -178,31 +140,11 @@ void CsharpFileDiagram::getIncludeDependencyDiagram(
       _projectHandler.getFileInfo(fileInfo, fileId);
       util::Graph::Node toNode = addNode(graph_, fileInfo);
 
-      decorateNode(graph_, toNode, sourceFileNodeDecoration);
       util::Graph::Edge useEdge = graph_.createEdge(currentNode, toNode);
       decorateEdge(graph_, useEdge, revUsagesEdgeDecoration);
 
     }
   }
-
-  /*
-  util::bfsBuild(graph_, currentNode,std::bind(&CsharpFileDiagram::getNodesFromIds,
-    this, std::placeholders::_1, std::placeholders::_2),
-    {}, usagesEdgeDecoration, 3);
-  LOG(info) << "<<Usages built>>";
-
-  util::bfsBuild(graph_, currentNode, std::bind(&CsharpFileDiagram::getNodesFromIds,
-    this, std::placeholders::_1, std::placeholders::_2),
-    {}, revUsagesEdgeDecoration, 3);
-  LOG(info) << "<<RevUsages built>>";  
-  */
-  /* util::bfsBuild(graph_, currentNode, std::bind(&CsharpFileDiagram::getProvides,
-    this, std::placeholders::_1, std::placeholders::_2),
-    {}, usagesEdgeDecoration, 3);
-
-  util::bfsBuild(graph_, currentNode, std::bind(&CsharpFileDiagram::getRevProvides,
-    this, std::placeholders::_1, std::placeholders::_2),
-    {}, revUsagesEdgeDecoration, 3);*/
 }
 /*
 std::string CsharpFileDiagram::getIncludeDependencyDiagramLegend()
@@ -272,32 +214,70 @@ std::string CsharpFileDiagram::getExternalDependencyDiagramLegend()
 
   return builder.getOutput();
 }
-
+*/
 void CsharpFileDiagram::getExternalUsersDiagram(
   util::Graph& graph_,
-  const core::FileId& fileId_)
+  const core::FileId& fileId_,
+  const DirectoryUsages& dirRevUsages_)
 {
   core::FileInfo fileInfo;
   _projectHandler.getFileInfo(fileInfo, fileId_);
   util::Graph::Node currentNode = addNode(graph_, fileInfo);
   decorateNode(graph_, currentNode, centerNodeDecoration);
+  
+  //to get the directory tree
+  getSubsystemDependencyDiagram(graph_,fileId_);
 
-  std::set<util::Graph::Node> subdirs = util::bfsBuild(graph_, currentNode,
-    std::bind(&CsharpFileDiagram::getSubDirs, this, std::placeholders::_1,
-    std::placeholders::_2), {}, subdirEdgeDecoration);
-
-  for (const util::Graph::Node& subdir : subdirs)
+  //util::Graph::Node lastNode;
+  for (const auto& map : dirRevUsages_)
   {
-    util::bfsBuild(graph_, subdir,std::bind(&CsharpFileDiagram::getRevImplements,
-      this, std::placeholders::_1, std::placeholders::_2),
-      {}, revImplementsEdgeDecoration);
+    core::FileId fileId = map.first;
+    core::FileInfo fInfo;
+    _projectHandler.getFileInfo(fInfo, fileId);
+    util::Graph::Node dirNode = addNode(graph_, fInfo);
+    // if (!lastNode.empty())
+    // {
+    //   if (!graph_.hasEdge(lastNode,dirNode))
+    //   {
+    //     util::Graph::Edge subDirEdge = graph_.createEdge(lastNode,dirNode);
+    //     decorateEdge(graph_, subDirEdge, subdirEdgeDecoration);
+    //   }
+    // }
+    LOG(info)  << "C# DIRECTORY: " << fInfo.path;
 
-    util::bfsBuild(graph_, subdir,std::bind(&CsharpFileDiagram::getRevDepends,
-      this, std::placeholders::_1, std::placeholders::_2),
-      {}, revDependsEdgeDecoration);
+    for (const auto& innerMap : map.second)
+    {
+      for (const auto& revUseIds : innerMap)
+      {
+        for (const auto& revUseId : revUseIds.second)
+        {
+          core::FileInfo info;
+          LOG(info) << "C# FILES: " << info.path;
+
+          _projectHandler.getFileInfo(info, revUseId);
+          if (info.path.find(fileInfo.path + '/') == std::string::npos)
+          {
+            core::FileInfo externalDirInfo;
+            _projectHandler.getFileInfo(externalDirInfo, info.parent);
+            LOG(info) << "C# EXTERNAL DIRECTORY: " << externalDirInfo.path;
+            util::Graph::Node externalDirNode = addNode(graph_,externalDirInfo);
+
+            if (!graph_.hasEdge(dirNode,externalDirNode))
+            {
+              util::Graph::Edge edge = graph_.createEdge(dirNode,externalDirNode);
+              decorateEdge(graph_, edge, revUsagesEdgeDecoration);
+            }
+          }
+        }
+      }
+    }
+    //lastNode = dirNode; 
   }
-}
 
+
+
+}
+/*
 std::string CsharpFileDiagram::getExternalUsersDiagramLegend()
 {
   util::LegendBuilder builder("External Users Diagram");

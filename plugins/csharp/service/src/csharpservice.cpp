@@ -19,7 +19,6 @@ namespace language
 typedef odb::query<cc::model::File> FileQuery;
 typedef odb::result<model::File> FileResult;
 typedef std::map<std::string, std::vector<std::string>> Usages;
-//typedef std::map<std::string, std::vector<std::map<std::string, std::vector<std::string>>>> DirectoryUsages;
 typedef std::map<std::string, std::vector<Usages>> DirectoryUsages;
 namespace fs = boost::filesystem;
 namespace bp = boost::process;
@@ -229,21 +228,17 @@ void CsharpServiceHandler::getFileDiagram(
     }
     case EXTERNAL_USERS:
     {
-      LOG(info) << "4";
       DirectoryUsages dirRevUsages; 
-      LOG(info) << "5";
 
+      //This is the main directory to which the diagram is called upon.
       model::FilePtr directory = _transaction([&,this]{
           return _db->query_one<model::File>(
             FileQuery::id == std::stoull(fileId_)
           );
       });
-      LOG(info) << "6" << directory->path;
-      // FileResult directories = _transaction([&,this]{
-      //   return _db->query<model::File>(
-      //         FileQuery::type == model::File::DIRECTORY_TYPE);
-      // });
+      LOG(info) << "MAIN DIR PATH" << directory->path;
 
+      //This will contain all the directories from the project
       std::vector<model::FilePtr> directories;
       util::OdbTransaction {_db} ([&]() {
         FileResult res = _db->query<model::File>(
@@ -251,50 +246,33 @@ void CsharpServiceHandler::getFileDiagram(
         for (auto fp : res)
           directories.push_back(std::make_shared<model::File>(std::move(fp)));
       });
-      LOG(info) << "7";
-      std::vector<model::FilePtr> sub;
-      // 
-      // 
-      // 
-      //   
-      //   
-          for (const auto& dir : directories)
-           {
-             LOG(info) << "71";
-      //       if (dir.path.find(directory->path) != std::string::npos) 
-      //       {
-      //         LOG(info) << "72";
-      //           sub.push_back(dir);
-      //           LOG(info) << "73";
-      //       }
-      //       LOG(info) << "74";
-          }
-      //   
-      //   
-      //   
-      //    
-      //   
-      // 
-      // 
-      // 
-      //   
-      // 
-      LOG(info) << "8";
-      // FileResult sub =_transaction([&, this]{
-      //   return _db->query<model::File>(
-      //         FileQuery::parent == std::stoull(fileId_) &&
-      //         FileQuery::type == model::File::DIRECTORY_TYPE);
-      //});
-      // iterate on subddirectories and add a BFS to each CS file
-      // under the subdir
-      
+
+      //Sub will contain all the directories which are subdirectories
+      //of main directory, including the main directory.
+      //Checking is done with the paths.
+      std::vector<model::FilePtr> sub; 
+      sub.push_back(directory);
+      for (const auto& dir : directories)
+      {
+        if (dir->path.find(directory->path + '/') != std::string::npos) 
+          sub.push_back(dir);
+      }
+
+      //LOGGING: check fetched directories
+      for (const auto& s : sub)
+      {
+        LOG(info) << s->path;
+      }
+
+      // Iterate on subddirectories and add a BFS to each CS file
+      // under the subdir.
+      // Gather for each subdir every BFS for every CS file into
+      // dirRevUsages.
       std::vector<model::FilePtr> css;
       std::vector<Usages> revs;
       Usages rev;
-      LOG(info) << "9";
       for (const model::FilePtr& subdir : sub)
       {
-        LOG(info) << "10";
         util::OdbTransaction {_db} ([&](){
           FileResult res = _db->query<model::File>(
                 FileQuery::parent == subdir->id &&
@@ -302,7 +280,6 @@ void CsharpServiceHandler::getFileDiagram(
           for (auto fp : res)
             css.push_back(std::make_shared<model::File>(std::move(fp)));
         });
-        LOG(info) << "11";
         for (const model::FilePtr& cs : css)
         {
           std::string id = std::to_string(cs->id);
@@ -311,11 +288,11 @@ void CsharpServiceHandler::getFileDiagram(
           revs.push_back(rev);
           rev.clear();
         }
-        LOG(info) << "12";
         dirRevUsages[std::to_string(subdir->id)] = revs;
         revs.clear();
+        css.clear();
       }
-      LOG(info) << "13";
+      diagram.getExternalUsersDiagram(graph,fileId_,dirRevUsages);
       break;
     }
   }

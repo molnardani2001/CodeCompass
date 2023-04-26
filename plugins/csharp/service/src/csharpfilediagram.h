@@ -15,6 +15,8 @@ namespace language
 {
 
 //namespace language = cc::service::language;
+typedef std::map<std::string, std::vector<std::string>> Usages;
+typedef std::map<std::string, std::vector<Usages>> DirectoryUsages;
 
 class CsharpFileDiagram
 {
@@ -43,9 +45,10 @@ public:
    * This diagram shows directories (modules) that are users of the
    * queried module.
    */
-  //void getExternalUsersDiagram(
-  //  util::Graph& graph_,
-  //  const core::FileId& fileId_);
+  void getExternalUsersDiagram(
+   util::Graph& graph_,
+   const core::FileId& fileId_,
+   const DirectoryUsages& dirRevUsages_);
 
   /**
    * This function creates legend for the External users diagram.
@@ -59,8 +62,8 @@ public:
   void getIncludeDependencyDiagram(
     util::Graph& graph_,
     const core::FileId& fileId_,
-    const std::map<std::string, std::vector<std::string>>& useIds,
-    const std::map<std::string, std::vector<std::string>>& revUseIds);
+    const Usages& useIds_,
+    const Usages& revUseIds_);
 
   /**
    * This function creates legend for the Include dependency diagram.
