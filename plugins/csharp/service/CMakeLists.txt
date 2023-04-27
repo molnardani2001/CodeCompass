@@ -39,6 +39,7 @@ add_subdirectory(src_csharp)
 
 add_library(csharpservice SHARED
   src/csharpservice.cpp
+  src/csharpdiagram.cpp
   src/csharpfilediagram.cpp
   src/plugin.cpp)
 

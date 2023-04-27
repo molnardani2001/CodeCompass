@@ -407,7 +407,7 @@ private:
   std::shared_ptr<odb::database> _db;
   util::OdbTransaction _transaction;
   //CppServiceHandler _cppHandler;
-  cc::service::csharp::CSharpQueryHandler _csharpQueryHandler;
+  //cc::service::csharp::CSharpQueryHandler _csharpQueryHandler;
   core::ProjectServiceHandler _projectHandler;
 };
 
