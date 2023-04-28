@@ -356,6 +356,7 @@ private:
 enum DiagramType
   {
     FILE_USAGES,
+    
     FUNCTION_CALL, /*!< In the function call diagram the nodes are functions and
       the edges are the function calls between them. The diagram also displays
       some dynamic information such as virtual function calls. */

@@ -664,6 +664,16 @@ public class CSharpQueryHandler : CsharpService.IAsync
     public async Task<Dictionary<string, int>> getDiagramTypesAsync(string astNodeId, 
         CancellationToken cancellationToken = default(CancellationToken))
     {
+        var node = queryCsharpAstNode(astNodeId);
+
+        switch (node.AstSymbolType)
+        {
+            case AstSymbolTypeEnum.Method:
+                return await Task.FromResult(new Dictionary<string, int>{ {"Function call diagram", (int)DiagramType.FUNCTION_CALL} });
+            case AstSymbolTypeEnum.Class:
+                return await Task.FromResult(new Dictionary<string, int>{ {"Detailed class diagram", (int)DiagramType.DETAILED_CLASS} });
+        }
+    
         return await Task.FromResult(new Dictionary<string, int>());
     }
 

@@ -9,6 +9,7 @@
 #include <boost/algorithm/string/split.hpp>
 
 #include "csharpfilediagram.h"
+#include "csharpdiagram.h"
 
 namespace cc
 {
@@ -143,7 +144,7 @@ void CsharpServiceHandler::getDiagramTypes(
         const core::AstNodeId& astNodeId_)
 {
   LOG(info) << "getDiagramTypes";
-  //_csharpQueryHandler.getDiagramTypes(return_, astNodeId_); 
+  _csharpQueryHandler.getDiagramTypes(return_, astNodeId_); 
 }
 
 void CsharpServiceHandler::getDiagram(
@@ -152,6 +153,11 @@ void CsharpServiceHandler::getDiagram(
         const std::int32_t diagramId_)
 {
   LOG(info) << "getDiagram";
+  CsharpDiagram diagram(_db,_datadir,_context);
+  util::Graph graph;
+
+
+
   //_csharpQueryHandler.getDiagram(return_, astNodeId_, diagramId_);
 }
 
