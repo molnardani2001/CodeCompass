@@ -81,9 +81,9 @@ void CsharpServiceHandler::getAstNodeInfo(
       FileQuery::path == return_.range.file);
   });
   std::stringstream ss;
-  ss << file;
+  ss << file->id; // itt csak siman ss<<file volt;
   return_.range.file = ss.str();
-  //LOG(info) << "csharpQuery.getAstNodeInfo: file = " << return_.range.file;
+  LOG(info) << "csharpQuery.getAstNodeInfo: file = " << return_.range.file;
 }
 
 void CsharpServiceHandler::getAstNodeInfoByPosition(
@@ -156,8 +156,44 @@ void CsharpServiceHandler::getDiagram(
   CsharpDiagram diagram(_db,_datadir,_context);
   util::Graph graph;
 
+  switch (diagramId_)
+  {
+    case FUNCTION_CALL:
+    {
+      // Center node 
+      AstNodeInfo centerInfo;
+      getAstNodeInfo(centerInfo,astNodeId_);
+      //logging purposes
+      LOG(info) << "centerastnodeinfo: ";
+      LOG(info) << "astnodetype: " << centerInfo.astNodeType;
+      LOG(info) << "value: " << centerInfo.astNodeValue;
+      LOG(info) << "entityhash: " << centerInfo.entityHash;
+      LOG(info) << "symboltype: " << centerInfo.symbolType;
+
+      // Callee nodes
+      std::vector<AstNodeInfo> calleeInfos;
+      getReferences(calleeInfos,astNodeId_,(int)ReferenceType::CALLEE,{});
+      //logging purposes
+      for (const auto& info : calleeInfos){
+        LOG(info) << "CalleeInfo: " << info.astNodeValue;
+      }
+
+      // Caller nodes
+      std::vector<AstNodeInfo> callerInfos;
+      getReferences(callerInfos,astNodeId_,(int)ReferenceType::CALLER,{});
+      //logging purposes
+      for (const auto& info : calleeInfos){
+        LOG(info) << "CallerInfo: " << info.astNodeValue;
+      }
+
+      diagram.getFunctionCallDiagram(graph,centerInfo,calleeInfos,callerInfos);
+      break;
+    }
+  }
 
 
+  if (graph.nodeCount() != 0)
+    return_ = graph.output(util::Graph::SVG);
   //_csharpQueryHandler.getDiagram(return_, astNodeId_, diagramId_);
 }
 
@@ -202,11 +238,8 @@ void CsharpServiceHandler::getFileDiagram(
   LOG(info) << "getFileDiagram";
 
   CsharpFileDiagram diagram(_db,_datadir, _context);
-  LOG(info) << "1";
   util::Graph graph;
-  LOG(info) << "2";
   graph.setAttribute("rankdir", "LR");
-  LOG(info) << "3";
 
   switch (diagramId_){
     case FILE_USAGES: //FILE_USAGES
@@ -336,7 +369,7 @@ void CsharpServiceHandler::getReferences(
         const std::int32_t referenceId_,
         const std::vector<std::string>& tags_)
 {
-  //LOG(info) << "getReferences";
+  LOG(info) << "getReferences";
   _csharpQueryHandler.getReferences(return_, astNodeId_, referenceId_, tags_);
   std::vector<AstNodeInfo> ret;
   for (AstNodeInfo nodeinfo : return_)
@@ -345,6 +378,8 @@ void CsharpServiceHandler::getReferences(
     return _db->query_one<model::File>(
     FileQuery::path == nodeinfo.range.file);
     });
+    LOG(info) << "getreferences: nodeInfo: " << nodeinfo.astNodeValue << " | " << nodeinfo.astNodeType;
+    LOG(info) << "getreferences: file: " << file->filename;
     
     std::stringstream ss;
     ss << file->id;

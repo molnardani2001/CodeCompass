@@ -184,26 +184,55 @@ void CsharpDiagram::getClassCollaborationDiagram(
 
 void CsharpDiagram::getFunctionCallDiagram(
   util::Graph& graph_,
-  const core::AstNodeId& astNodeId_)
+  const AstNodeInfo& centerNodeInfo_,
+  const std::vector<AstNodeInfo>& calleeNodeInfos_,
+  const std::vector<AstNodeInfo>& callerNodeInfos_)
 {
   std::map<core::AstNodeId, util::Graph::Node> visitedNodes;
   std::vector<AstNodeInfo> nodes;
 
-//   graph_.setAttribute("rankdir", "LR");
+  graph_.setAttribute("rankdir", "LR");
 
-//   //--- Center node ---//
-
-//   _cppHandler.getReferences(
-//     nodes, astNodeId_, CppServiceHandler::DEFINITION, {});
-
-//   if (nodes.empty())
-//     return;
-
-//   util::Graph::Node centerNode = addNode(graph_, nodes.front());
-//   decorateNode(graph_, centerNode, centerNodeDecoration);
+  // Center node
+  LOG(info) << "CENTER ASTNODE: " << centerNodeInfo_.astNodeValue;
+  AstNodeInfo nodeInfo = centerNodeInfo_;
+  nodeInfo.astNodeValue = nodeInfo.astNodeValue.substr(0,nodeInfo.astNodeValue.find('{'));
+  util::Graph::Node centerNode = addNode(graph_, nodeInfo);
+  decorateNode(graph_, centerNode, centerNodeDecoration);
 //   visitedNodes[astNodeId_] = centerNode;
 
-//   //--- Callees ---//
+  // Callees
+
+  for (const auto& calleeNodeInfo : calleeNodeInfos_)
+  {
+    AstNodeInfo calleeInfo = calleeNodeInfo;
+    calleeInfo.astNodeValue = calleeInfo.astNodeValue.substr(0,calleeInfo.astNodeValue.find('{'));
+    util::Graph::Node calleeNode = addNode(graph_, calleeInfo);
+    decorateNode(graph_, centerNode, calleeNodeDecoration);
+
+    if (!graph_.hasEdge(centerNode, calleeNode))
+    {
+      util::Graph::Edge edge = graph_.createEdge(centerNode, calleeNode);
+      decorateEdge(graph_, edge, calleeEdgeDecoration);
+    }
+  }
+
+  // Callers
+
+  for (const auto& callerNodeInfo : callerNodeInfos_)
+  {
+    AstNodeInfo callerInfo = callerNodeInfo;
+    callerInfo.astNodeValue = callerInfo.astNodeValue.substr(0,callerInfo.astNodeValue.find('{'));
+    util::Graph::Node callerNode = addNode(graph_, callerInfo);
+    decorateNode(graph_, centerNode, callerNodeDecoration);
+
+    if (!graph_.hasEdge(centerNode, callerNode))
+    {
+      util::Graph::Edge edge = graph_.createEdge(callerNode, centerNode);
+      decorateEdge(graph_, edge, callerEdgeDecoration);
+    }
+  }
+  _subgraphs.clear();
 
 //   nodes.clear();
 //   _cppHandler.getReferences(nodes, astNodeId_, CppServiceHandler::CALLEE, {});
@@ -256,7 +285,7 @@ void CsharpDiagram::getFunctionCallDiagram(
 //   }
 
 //   _subgraphs.clear();
-// }
+ }
 
 // void CsharpDiagram::getDetailedClassDiagram(
 //   util::Graph& graph_,
@@ -316,7 +345,7 @@ void CsharpDiagram::getFunctionCallDiagram(
 //     util::Graph::Edge edge = graph_.createEdge(inheritNode, currentNode);
 //     decorateEdge(graph_, edge, inheritClassEdgeDecoration);
 //   }
-}
+//}
 
 std::string CsharpDiagram::getDetailedClassNodeLabel(const AstNodeInfo& nodeInfo_)
 {
@@ -425,6 +454,7 @@ util::Graph::Node CsharpDiagram::addNode(
   util::Graph& graph_,
   const AstNodeInfo& nodeInfo_)
 {
+  LOG(info) << "addNode: " << nodeInfo_.id << nodeInfo_.range.file;
   util::Graph::Node node
     = graph_.getOrCreateNode(nodeInfo_.id,
       addSubgraph(graph_, nodeInfo_.range.file));

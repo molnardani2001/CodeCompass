@@ -289,7 +289,7 @@ public class CSharpQueryHandler : CsharpService.IAsync
         CancellationToken cancellationToken = default(CancellationToken))
     {
         System.Console.WriteLine("[CSharpService] getAstNodeInfoAsync");
-        return await Task.FromResult(new language.AstNodeInfo());
+        return await Task.FromResult(createAstNodeInfo(queryCsharpAstNode(astNodeId)));
     }
 
     public async Task<language.AstNodeInfo> getAstNodeInfoByPositionAsync(string path_, 
@@ -574,15 +574,22 @@ public class CSharpQueryHandler : CsharpService.IAsync
         int referenceId, List<string> tags, 
         CancellationToken cancellationToken = default(CancellationToken))
     {
-        var node = queryCsharpAstNode(astNodeId);        
+        var node = queryCsharpAstNode(astNodeId);  
+        Console.WriteLine("getreferencesasync NODE");
+        Console.WriteLine("getreferencesasync astsymboltype: " + node.AstSymbolType);  
+        Console.WriteLine("getreferencesasync asttype: " + node.AstType);
+        Console.WriteLine("getreferencesasync astvalue: " + node.AstValue);     
+        Console.WriteLine("getreferencesasync reftype: " + (ReferenceType)referenceId);
+        Console.WriteLine("getreferencesasync refid: " + referenceId);
         var ret = new List<language.AstNodeInfo>();
         switch ((ReferenceType)referenceId)
         {
             case ReferenceType.USAGE:
-                ret = createAstNodeInfoList(queryInvocations(node));
+                return await Task.FromResult(createAstNodeInfoList(queryInvocations(node)));
                 break;
             case ReferenceType.DEFINITION:
             case ReferenceType.DECLARATION:
+                Console.WriteLine("im in declaration");
                 ret = createAstNodeInfoList(queryDeclarators(node));
                 break;
             case ReferenceType.EVALUATION:
@@ -598,6 +605,7 @@ public class CSharpQueryHandler : CsharpService.IAsync
                 ret = createAstNodeInfoList(queryProperties(node));
                 break;
             case ReferenceType.THIS_CALLS:
+            Console.WriteLine("im in this_calls");
                 ret = createAstNodeInfoList(queryCalls(node));
                 break;
             case ReferenceType.CALLEE:
@@ -634,6 +642,10 @@ public class CSharpQueryHandler : CsharpService.IAsync
                 System.Console.WriteLine($"[CSharpService] {(ReferenceType)referenceId}"+ 
                     " ReferenceType is unhandled");
                 break;
+        }
+        foreach(var r in ret){
+            System.Console.WriteLine("getreferencesasync result: ",r.AstNodeType);
+            System.Console.WriteLine(r.AstNodeValue);
         }
         return await Task.FromResult(ret);        
     }

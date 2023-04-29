@@ -22,7 +22,9 @@ public:
 
   void getFunctionCallDiagram(
     util::Graph& graph_,
-    const core::AstNodeId& astNodeId_);
+    const AstNodeInfo& centerNodeInfo_,
+    const std::vector<AstNodeInfo>& calleeNodeInfos_,
+    const std::vector<AstNodeInfo>& callerNodeInfos_);
 
   /**
    * This function creates legend for the Function call diagram.

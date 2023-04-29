@@ -356,7 +356,7 @@ private:
 enum DiagramType
   {
     FILE_USAGES,
-    
+
     FUNCTION_CALL, /*!< In the function call diagram the nodes are functions and
       the edges are the function calls between them. The diagram also displays
       some dynamic information such as virtual function calls. */
@@ -396,6 +396,94 @@ enum DiagramType
       between the subdirectories of the queried module. This diagram is useful
       to understand the relationships of the subdirectories (submodules)
       of a module. */
+  };
+
+enum ReferenceType
+  {
+  DEFINITION, /*!< By this option the definition(s) of the AST node can be
+    queried. However according to the "one definition rule" a named entity
+    can have only one definition, in a parsing several definitions might be
+    available. This is the case when the project is built for several targets
+    and in the different builds different definitions are defined for an
+    entity (e.g. because of an #ifdef section). */
+
+  DECLARATION, /*!< By this options the declaration(s) of the AST node can be
+    queried. */
+
+  USAGE, /*!< By this option the usages of the AST node can be queried, i.e.
+    the nodes of which the entity hash is identical to the queried one. */
+
+  THIS_CALLS, /*!< Get function calls in a function. WARNING: If the
+    definition of the AST node is not unique then it returns the callees of
+    one of them. */
+
+  CALLS_OF_THIS, /*!< Get calls of a function. */
+
+  CALLEE, /*!< Get called functions definitions. WARNING: If the definition of
+    the AST node is not unique then it returns the callees of one of them. */
+
+  CALLER, /*!< Get caller functions. */
+
+  VIRTUAL_CALL, /*!< A function may be used virtually on a base type object.
+    The exact type of the object is based on dynamic information, which can't
+    be determined statically. Weak usage returns these possible calls. */
+
+  FUNC_PTR_CALL, /*!< Functions can be assigned to function pointers which
+    can be invoked later. This option returns these invocations. */
+
+  PARAMETER, /*!< This option returns the parameters of a function. */
+
+  LOCAL_VAR, /*!< This option returns the local variables of a function. */
+
+  RETURN_TYPE, /*!< This option returns the return type of a function. */
+
+  OVERRIDE, /*!< This option returns the functions which the given function
+    overrides. */
+
+  OVERRIDDEN_BY, /*!< This option returns the overrides of a function. */
+
+  USAGEREAD, /*!< This option returns the places where a variable is read. */
+
+  WRITE, /*!< This option returns the places where a variable is written. */
+
+  READ,
+  TYPE, /*!< This option returns the type of a variable. */
+
+  ALIAS, /*!< Types may have aliases, e.g. by typedefs. */
+
+  INHERIT_FROM, /*!< Types from which the queried type inherits. */
+
+  INHERIT_BY, /*!< Types by which the queried type is inherited. */
+
+  DATA_MEMBER, /*!< Data members of a class. */
+
+  METHOD, /*!< Members of a class. */
+
+  FRIEND, /*!< The friends of a class. */
+
+  UNDERLYING_TYPE, /*!< Underlying type of a typedef. */
+
+  ENUM_CONSTANTS, /*!< Enum constants. */
+
+  EXPANSION, /*!< Macro expansion. */
+
+  UNDEFINITION, /*!< Macro undefinition. */
+
+  EVALUATION, // LINQ evaluation
+
+  DATA_MODIFICATION, // LINQ underlying datadtruct is modified
+
+  CONSTRUCTOR,
+
+  DESTRUCTOR,
+
+  OPERATOR,
+
+  ACCESSOR,
+
+  DELEGATE,
+
+  EVENT
   };
 
   std::shared_ptr<odb::database> _db;
