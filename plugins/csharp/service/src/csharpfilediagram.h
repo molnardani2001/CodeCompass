@@ -113,11 +113,6 @@ public:
    * @return The generated legend as a string in SVG format.
    */
   //std::string getComponentUsersDiagramLegend();
-  
-  void getTestDiagram(
-    std::string firstAstNodeValue,
-    util::Graph& graph_,
-    const core::FileId& fileId_);
 
 private:
   typedef std::vector<std::pair<std::string, std::string>> Decoration;
