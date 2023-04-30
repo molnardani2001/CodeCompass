@@ -54,12 +54,12 @@ public:
    * This function creates legend for the External users diagram.
    * @return The generated legend as a string in SVG format.
    */
-  //std::string getExternalUsersDiagramLegend();
+  std::string getExternalUsersDiagramLegend();
 
   /**
    * This diagram shows of the `#include` file dependencies.
    */
-  void getIncludeDependencyDiagram(
+  void getFileUsagesDiagram(
     util::Graph& graph_,
     const core::FileId& fileId_,
     const Usages& useIds_,
@@ -69,7 +69,7 @@ public:
    * This function creates legend for the Include dependency diagram.
    * @return The generated legend as a string in SVG format.
    */
-  //std::string getIncludeDependencyDiagramLegend();
+  std::string getFileUsagesDiagramLegend();
 
   /**
    * Interface diagram shows the used and provided interfaces of a source code
@@ -98,7 +98,7 @@ public:
    * This function creates legend for the Subsystem dependency diagram.
    * @return The generated legend as a string in SVG format.
    */
-  //std::string getSubsystemDependencyDiagramLegend();
+  std::string getSubsystemDependencyDiagramLegend();
 
   /**
    * Component users diagram for source file S shows which source files depend

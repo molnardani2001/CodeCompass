@@ -93,7 +93,7 @@ std::string CsharpFileDiagram::getComponentUsersDiagramLegend()
 }
 */
 
-void CsharpFileDiagram::getIncludeDependencyDiagram(
+void CsharpFileDiagram::getFileUsagesDiagram(
   util::Graph& graph_,
   const core::FileId& fileId_,
   const Usages& useIds_,
@@ -145,25 +145,23 @@ void CsharpFileDiagram::getIncludeDependencyDiagram(
 
     }
   }
-}
-/*
-std::string CsharpFileDiagram::getIncludeDependencyDiagramLegend()
-{
-  util::LegendBuilder builder("Include Dependency Diagram");
 
-  builder.addNode("center file", centerNodeDecoration);
-  builder.addNode("directory", directoryNodeDecoration);
-  builder.addNode("binary file", binaryFileNodeDecoration);
+  decorateNode(graph_, currentNode, centerNodeDecoration);
+}
+
+std::string CsharpFileDiagram::getFileUsagesDiagramLegend()
+{
+  util::LegendBuilder builder("File Usages Diagram");
+
+  builder.addNode("center node", centerNodeDecoration);
   builder.addNode("source file", sourceFileNodeDecoration);
-  builder.addNode("header file", headerFileNodeDecoration);
-  builder.addNode("object file", objectFileNodeDecoration);
 
   builder.addEdge("uses", usagesEdgeDecoration);
   builder.addEdge("used by files", revUsagesEdgeDecoration);
 
   return builder.getOutput();
 }
-
+/*
 void CsharpFileDiagram::getExternalDependencyDiagram(
   util::Graph& graph_,
   const core::FileId& fileId_)
@@ -228,22 +226,12 @@ void CsharpFileDiagram::getExternalUsersDiagram(
   //to get the directory tree
   getSubsystemDependencyDiagram(graph_,fileId_);
 
-  //util::Graph::Node lastNode;
   for (const auto& map : dirRevUsages_)
   {
     core::FileId fileId = map.first;
     core::FileInfo fInfo;
     _projectHandler.getFileInfo(fInfo, fileId);
     util::Graph::Node dirNode = addNode(graph_, fInfo);
-    // if (!lastNode.empty())
-    // {
-    //   if (!graph_.hasEdge(lastNode,dirNode))
-    //   {
-    //     util::Graph::Edge subDirEdge = graph_.createEdge(lastNode,dirNode);
-    //     decorateEdge(graph_, subDirEdge, subdirEdgeDecoration);
-    //   }
-    // }
-    LOG(info)  << "C# DIRECTORY: " << fInfo.path;
 
     for (const auto& innerMap : map.second)
     {
@@ -252,14 +240,12 @@ void CsharpFileDiagram::getExternalUsersDiagram(
         for (const auto& revUseId : revUseIds.second)
         {
           core::FileInfo info;
-          LOG(info) << "C# FILES: " << info.path;
 
           _projectHandler.getFileInfo(info, revUseId);
           if (info.path.find(fileInfo.path + '/') == std::string::npos)
           {
             core::FileInfo externalDirInfo;
             _projectHandler.getFileInfo(externalDirInfo, info.parent);
-            LOG(info) << "C# EXTERNAL DIRECTORY: " << externalDirInfo.path;
             util::Graph::Node externalDirNode = addNode(graph_,externalDirInfo);
 
             if (!graph_.hasEdge(dirNode,externalDirNode))
@@ -271,31 +257,26 @@ void CsharpFileDiagram::getExternalUsersDiagram(
         }
       }
     }
-    //lastNode = dirNode; 
   }
 
 
 
 }
-/*
+
 std::string CsharpFileDiagram::getExternalUsersDiagramLegend()
 {
   util::LegendBuilder builder("External Users Diagram");
 
   builder.addNode("center file", centerNodeDecoration);
   builder.addNode("directory", directoryNodeDecoration);
-  builder.addNode("binary file", binaryFileNodeDecoration);
   builder.addNode("source file", sourceFileNodeDecoration);
-  builder.addNode("header file", headerFileNodeDecoration);
-  builder.addNode("object file", objectFileNodeDecoration);
 
   builder.addEdge("sub directory", subdirEdgeDecoration);
-  builder.addEdge("implemented by", revImplementsEdgeDecoration);
-  builder.addEdge("dependent on", revDependsEdgeDecoration);
+  builder.addEdge("used by", revUsagesEdgeDecoration);
 
   return builder.getOutput();
 }
-
+/*
 void CsharpFileDiagram::getInterfaceDiagram(
   util::Graph& graph_,
   const core::FileId& fileId_)
@@ -365,25 +346,19 @@ void CsharpFileDiagram::getSubsystemDependencyDiagram(
 
   subdirs.insert(currentNode);
 }
-/*
+
 std::string CsharpFileDiagram::getSubsystemDependencyDiagramLegend()
 {
   util::LegendBuilder builder("Subsystem Dependency Diagram");
 
   builder.addNode("center file", centerNodeDecoration);
   builder.addNode("directory", directoryNodeDecoration);
-  builder.addNode("binary file", binaryFileNodeDecoration);
-  builder.addNode("source file", sourceFileNodeDecoration);
-  builder.addNode("header file", headerFileNodeDecoration);
-  builder.addNode("object file", objectFileNodeDecoration);
 
   builder.addEdge("sub directory", subdirEdgeDecoration);
-  builder.addEdge("implements", implementsEdgeDecoration);
-  builder.addEdge("depends on", dependsEdgeDecoration);
 
   return builder.getOutput();
 }
-
+/*
 std::vector<util::Graph::Node> FileDiagram::getIncludedFiles(
   util::Graph& graph_,
   const util::Graph::Node& node_,
@@ -816,8 +791,10 @@ std::string CsharpFileDiagram::getLastNParts(const std::string& path_, std::size
 }
 
 const CsharpFileDiagram::Decoration CsharpFileDiagram::centerNodeDecoration = {
+  {"shape", "ellipse"},
   {"style", "filled"},
-  {"fillcolor", "gold"}
+  {"fillcolor", "gold"},
+  {"fontcolor", "black"}
 };
 
 const CsharpFileDiagram::Decoration CsharpFileDiagram::sourceFileNodeDecoration = {

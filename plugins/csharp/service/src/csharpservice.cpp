@@ -292,7 +292,7 @@ void CsharpServiceHandler::getFileDiagram(
       Usages revUseIds;
       _csharpQueryHandler.getFileUsages(revUseIds,fileId_,true);
 
-      diagram.getIncludeDependencyDiagram(graph,fileId_,useIds,revUseIds);
+      diagram.getFileUsagesDiagram(graph,fileId_,useIds,revUseIds);
 
       break;
     }
@@ -381,6 +381,23 @@ void CsharpServiceHandler::getFileDiagramLegend(
         const std::int32_t diagramId_)
 {
   LOG(info) << "getFileDiagramLegend";
+  CsharpFileDiagram diagram(_db, _datadir, _context);
+
+  switch (diagramId_)
+  {
+
+      case EXTERNAL_USERS:
+        return_ = diagram.getExternalUsersDiagramLegend();
+        break;
+
+      case FILE_USAGES:
+        return_ = diagram.getFileUsagesDiagramLegend();
+        break;
+
+      case SUBSYSTEM_DEPENDENCY:
+        return_ = diagram.getSubsystemDependencyDiagramLegend();
+        break;
+  }
 }
 
 void CsharpServiceHandler::getReferenceTypes(
