@@ -225,6 +225,19 @@ void CsharpServiceHandler::getDiagramLegend(
         const std::int32_t diagramId_)
 {
   LOG(info) << "getDiagramLegend";
+
+  CsharpDiagram diagram(_db,_datadir, _context);
+
+  switch (diagramId_)
+  {
+    case FUNCTION_CALL:
+      return_ = diagram.getFunctionCallLegend();
+      break;
+
+    case DETAILED_CLASS:
+      return_ = diagram.getDetailedClassLegend();
+      break;
+  }
 }
 
 void CsharpServiceHandler::getFileDiagramTypes(

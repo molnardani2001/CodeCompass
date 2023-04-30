@@ -424,7 +424,7 @@ std::string CsharpDiagram::getDetailedClassLegend()
     {"label", "<b>static</b>"}}, true);
   builder.addNode("virtual method", {{"shape", "none"},
     {"label", "<i>virtual</i>"}}, true);
-  builder.addEdge("inheritance", inheritClassEdgeDecoration);
+  //builder.addEdge("inheritance", inheritClassEdgeDecoration);
 
   return builder.getOutput();
 }
