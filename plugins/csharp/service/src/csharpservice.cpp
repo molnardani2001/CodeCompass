@@ -189,6 +189,29 @@ void CsharpServiceHandler::getDiagram(
       diagram.getFunctionCallDiagram(graph,centerInfo,calleeInfos,callerInfos);
       break;
     }
+    case DETAILED_CLASS:
+    { 
+      // Center node 
+      AstNodeInfo centInfo;
+      getAstNodeInfo(centInfo,astNodeId_);
+
+      //Data members - property nodes
+      std::vector<AstNodeInfo> propertyInfos;
+      getReferences(propertyInfos, astNodeId_,(int)ReferenceType::DATA_MEMBER,{});
+      for (const auto& info : propertyInfos){
+        LOG(info) << "PropertyInfo: " << info.astNodeValue;
+      }
+
+      // Method nodes
+      std::vector<AstNodeInfo> methodInfos;
+      getReferences(methodInfos,astNodeId_,(int)ReferenceType::METHOD,{});
+      for (const auto& info : methodInfos){
+        LOG(info) << "MethodInfo: " << info.astNodeValue;
+      }
+
+      diagram.getDetailedClassDiagram(graph,centInfo,propertyInfos,methodInfos);
+      break;
+    }
   }
 
 

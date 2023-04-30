@@ -39,7 +39,9 @@ public:
    */
   void getDetailedClassDiagram(
     util::Graph& graph_,
-    const core::AstNodeId& astNodeId_);
+  const AstNodeInfo& centerNodeInfo_,
+  const std::vector<AstNodeInfo>& propertyNodeInfos_,
+  const std::vector<AstNodeInfo>& methodNodeInfos_);
 
   /**
    * This function creates legend for the Detailed class diagram.
@@ -88,7 +90,10 @@ private:
    * This function creates node label for UML class diagram for the
    * selected class.
    */
-  std::string getDetailedClassNodeLabel(const AstNodeInfo& nodeInfo_);
+  std::string getDetailedClassNodeLabel(
+    const AstNodeInfo& centerNodeInfo_,
+    const std::vector<AstNodeInfo>& propertyNodeInfos_,
+    const std::vector<AstNodeInfo>& methodNodeInfos_);
 
   /**
    * This function return string representation visibility of an AST node

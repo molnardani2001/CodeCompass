@@ -188,9 +188,6 @@ void CsharpDiagram::getFunctionCallDiagram(
   const std::vector<AstNodeInfo>& calleeNodeInfos_,
   const std::vector<AstNodeInfo>& callerNodeInfos_)
 {
-  std::map<core::AstNodeId, util::Graph::Node> visitedNodes;
-  std::vector<AstNodeInfo> nodes;
-
   graph_.setAttribute("rankdir", "LR");
 
   // Center node
@@ -199,7 +196,6 @@ void CsharpDiagram::getFunctionCallDiagram(
   nodeInfo.astNodeValue = nodeInfo.astNodeValue.substr(0,nodeInfo.astNodeValue.find('{'));
   util::Graph::Node centerNode = addNode(graph_, nodeInfo);
   decorateNode(graph_, centerNode, centerNodeDecoration);
-//   visitedNodes[astNodeId_] = centerNode;
 
   // Callees
 
@@ -233,69 +229,26 @@ void CsharpDiagram::getFunctionCallDiagram(
     }
   }
   _subgraphs.clear();
-
-//   nodes.clear();
-//   _cppHandler.getReferences(nodes, astNodeId_, CppServiceHandler::CALLEE, {});
-
-//   for (const AstNodeInfo& node : nodes)
-//   {
-//     util::Graph::Node calleeNode;
-
-//     auto it = visitedNodes.find(node.id);
-//     if (it == visitedNodes.end())
-//     {
-//       calleeNode = addNode(graph_, node);
-//       decorateNode(graph_, calleeNode, calleeNodeDecoration);
-//       visitedNodes.insert(it, std::make_pair(node.id, calleeNode));
-//     }
-//     else
-//       calleeNode = it->second;
-
-//     if (!graph_.hasEdge(centerNode, calleeNode))
-//     {
-//       util::Graph::Edge edge = graph_.createEdge(centerNode, calleeNode);
-//       decorateEdge(graph_, edge, calleeEdgeDecoration);
-//     }
-//   }
-
-//   //--- Callers ---//
-
-//   nodes.clear();
-//   _cppHandler.getReferences(nodes, astNodeId_, CppServiceHandler::CALLER, {});
-
-//   for (const AstNodeInfo& node : nodes)
-//   {
-//     util::Graph::Node callerNode;
-
-//     auto it = visitedNodes.find(node.id);
-//     if (it == visitedNodes.end())
-//     {
-//       callerNode = addNode(graph_, node);
-//       decorateNode(graph_, callerNode, callerNodeDecoration);
-//       visitedNodes.insert(it, std::make_pair(node.id, callerNode));
-//     }
-//     else
-//       callerNode = it->second;
-
-//     if (!graph_.hasEdge(callerNode, centerNode))
-//     {
-//       util::Graph::Edge edge = graph_.createEdge(callerNode, centerNode);
-//       decorateEdge(graph_, edge, callerEdgeDecoration);
-//     }
-//   }
-
-//   _subgraphs.clear();
  }
 
-// void CsharpDiagram::getDetailedClassDiagram(
-//   util::Graph& graph_,
-//   const core::AstNodeId& astNodeId_)
-// {
-//   std::vector<AstNodeInfo> nodes;
+void CsharpDiagram::getDetailedClassDiagram(
+  util::Graph& graph_,
+  const AstNodeInfo& centerNodeInfo_,
+  const std::vector<AstNodeInfo>& propertyNodeInfos_,
+  const std::vector<AstNodeInfo>& methodNodeInfos_)
+{
+  graph_.setAttribute("rankdir", "BT");
 
-//   graph_.setAttribute("rankdir", "BT");
+  // Center node 
 
-//   //--- Center node ---//
+  //LOG(info) << "CENTER ASTNODE: " << centerNodeInfo_.astNodeValue;
+  AstNodeInfo nodeInfo = centerNodeInfo_;
+  nodeInfo.astNodeValue = nodeInfo.astNodeValue.substr(0,nodeInfo.astNodeValue.find('{'));
+  util::Graph::Node centerNode = addNode(graph_, nodeInfo);
+  graph_.setNodeAttribute(centerNode,"label",
+    getDetailedClassNodeLabel(nodeInfo,propertyNodeInfos_,methodNodeInfos_),
+    true);
+  graph_.setNodeAttribute(centerNode,"shape", "none");
 
 //   _cppHandler.getReferences(
 //     nodes, astNodeId_, CppServiceHandler::DEFINITION, {});
@@ -345,75 +298,67 @@ void CsharpDiagram::getFunctionCallDiagram(
 //     util::Graph::Edge edge = graph_.createEdge(inheritNode, currentNode);
 //     decorateEdge(graph_, edge, inheritClassEdgeDecoration);
 //   }
-//}
+}
 
-std::string CsharpDiagram::getDetailedClassNodeLabel(const AstNodeInfo& nodeInfo_)
+std::string CsharpDiagram::getDetailedClassNodeLabel(
+  const AstNodeInfo& centerNodeInfo_,
+  const std::vector<AstNodeInfo>& propertyNodeInfos_,
+  const std::vector<AstNodeInfo>& methodNodeInfos_)
 {
   std::string colAttr = "border='0' align='left'";
   std::string label = "<table border='1' cellspacing='0'>";
 
   label.append(graphHtmlTag("tr", graphHtmlTag("td",
     graphHtmlTag("font",
-    util::escapeHtml(nodeInfo_.astNodeValue), "color='white'"),
+    util::escapeHtml(centerNodeInfo_.astNodeValue), "color='white'"),
     "colspan='2' SIDES='B' bgcolor='#316ECF' align='center'")));
 
-  std::vector<AstNodeInfo> nodes;
+  //--- Data members of the class 
 
-//   //--- Data members of the class ---//
+  for (auto it = propertyNodeInfos_.begin(); it != propertyNodeInfos_.end(); ++it)
+  {
+    std::string visibility = visibilityToHtml(*it);
+    std::string content = memberContentToHtml(*it,
+      util::escapeHtml(it->astNodeValue.substr(0,it->astNodeValue.find('{')))/* + " : " + getProperty(it->id, "Type")*/);
 
-//   _cppHandler.getReferences(nodes, nodeInfo_.id,
-//     CppServiceHandler::DATA_MEMBER, {});
+    std::string attr = colAttr;
+    if (it == propertyNodeInfos_.end() - 1)
+      attr = "border='1' align='left' SIDES='B'";
 
-//   for (auto it = nodes.begin(); it != nodes.end(); ++it)
-//   {
-//     std::string visibility = visibilityToHtml(*it);
-//     std::string content = memberContentToHtml(*it,
-//       util::escapeHtml(it->astNodeValue + " : " + getProperty(it->id, "Type")));
+    label += graphHtmlTag("tr",
+      graphHtmlTag("td", visibility, attr) +
+      graphHtmlTag("td", content, attr));
+  }
 
-//     std::string attr = colAttr;
-//     if (it == nodes.end() - 1)
-//       attr = "border='1' align='left' SIDES='B'";
+  // Methods of the class
 
-//     label += graphHtmlTag("tr",
-//       graphHtmlTag("td", visibility, attr) +
-//       graphHtmlTag("td", content, attr));
-//   }
+  for (const AstNodeInfo& node : methodNodeInfos_)
+  {
+    std::string visibility = visibilityToHtml(node);
 
-//   nodes.clear();
+    if (!node.astNodeValue.empty())
+    {
+      std::string content = memberContentToHtml(node,
+        util::escapeHtml(node.astNodeValue.substr(0,node.astNodeValue.find('{'))));
 
-//   //--- Methods of the class ---//
+      label += graphHtmlTag("tr",
+        graphHtmlTag("td", visibility, colAttr) +
+        graphHtmlTag("td", content, colAttr));
+    }
+  }
 
-//   _cppHandler.getReferences(nodes, nodeInfo_.id,
-//     CppServiceHandler::METHOD, {});
-
-//   for (const AstNodeInfo& node : nodes)
-//   {
-//     std::string visibility = visibilityToHtml(node);
-
-//     // TODO: Constructor and Destructor signatures can be empty.
-//     if (!node.astNodeValue.empty())
-//     {
-//       std::string content = memberContentToHtml(node,
-//         util::escapeHtml(node.astNodeValue));
-
-//       label += graphHtmlTag("tr",
-//         graphHtmlTag("td", visibility, colAttr) +
-//         graphHtmlTag("td", content, colAttr));
-//     }
-//   }
-
-//   label.append("</table>");
+  label.append("</table>");
 
    return label;
 }
 
 std::string CsharpDiagram::visibilityToHtml(const AstNodeInfo& node_)
 {
-  if (contains(node_.tags, "public"))
+  if (contains(node_.tags, "Public"))
     return graphHtmlTag("font", "+", "color='green'");
-  if (contains(node_.tags, "private"))
+  if (contains(node_.tags, "Private"))
     return graphHtmlTag("font", "-", "color='red'");
-  if (contains(node_.tags, "protected"))
+  if (contains(node_.tags, "Protected"))
     return graphHtmlTag("font", "#", "color='blue'");
 
   return "";
@@ -426,13 +371,13 @@ std::string CsharpDiagram::memberContentToHtml(
   std::string startTags;
   std::string endTags;
 
-  if (contains(node_.tags, "static"))
+  if (contains(node_.tags, "Static"))
   {
     startTags += "<b>";
     endTags.insert(0, "</b>");
   }
 
-  if (contains(node_.tags, "virtual"))
+  if (contains(node_.tags, "Virtual"))
   {
     startTags += "<i>";
     endTags.insert(0, "</i>");
@@ -441,14 +386,14 @@ std::string CsharpDiagram::memberContentToHtml(
   return startTags + util::escapeHtml(content_) + endTags;
 }
 
-// std::string CsharpDiagram::getProperty(
-//   const core::AstNodeId& astNodeId_,
-//   const std::string& property_)
-// {
-//   std::map<std::string, std::string> properties;
-//   _cppHandler.getProperties(properties, astNodeId_);
-//   return properties[property_];
-// }
+std::string CsharpDiagram::getProperty(
+  const core::AstNodeId& astNodeId_,
+  const std::string& property_)
+{
+  // std::map<std::string, std::string> properties;
+  // _cppHandler.getProperties(properties, astNodeId_);
+  // return properties[property_];
+}
 
 util::Graph::Node CsharpDiagram::addNode(
   util::Graph& graph_,
