@@ -122,8 +122,9 @@ require([
 
     serviceTypeToString : function (serviceType) {
       switch (serviceType) {
-        case ServiceType.Internal: return 'Internal';
-        case ServiceType.External: return 'External';
+        case ServiceType.Product: return 'Product';
+        case ServiceType.Integration: return 'Integration';
+        case ServiceType.Central: return 'Central';
       }
     }
 

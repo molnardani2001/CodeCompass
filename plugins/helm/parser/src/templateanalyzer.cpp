@@ -163,7 +163,7 @@ void TemplateAnalyzer::processServiceDeps(
   {
     model::Microservice externalService;
     externalService.name = YAML::Dump(currentFile_["metadata"]["name"]);
-    externalService.type = model::Microservice::ServiceType::EXTERNAL;
+    externalService.type = model::Microservice::ServiceType::CENTRAL;
     externalService.file = filePtr->id;
     externalService.serviceId = createIdentifier(externalService);
     externalService.version = YAML::Dump(currentFile_["metadata"]["labels"]["app.kubernetes.io\/version"]);

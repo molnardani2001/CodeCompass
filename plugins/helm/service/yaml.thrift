@@ -9,8 +9,9 @@ typedef string MicroserviceId
 
 enum ServiceType
 {
-  Internal = 0,
-  External = 1
+  Product = 0,
+  Integration = 1,
+  Central = 2
 }
 
 struct MicroserviceInfo

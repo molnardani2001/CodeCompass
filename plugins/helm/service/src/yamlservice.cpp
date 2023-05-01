@@ -403,8 +403,9 @@ void YamlServiceHandler::getMicroserviceTypes(
   std::vector<cc::service::language::ServiceType::type>& return_)
 {
   typedef model::Microservice::ServiceType MSServiceType;
-  return_.push_back(convertToThriftType(MSServiceType::INTERNAL));
-  return_.push_back(convertToThriftType(MSServiceType::EXTERNAL));
+  return_.push_back(convertToThriftType(MSServiceType::PRODUCT));
+  return_.push_back(convertToThriftType(MSServiceType::INTEGRATION));
+  return_.push_back(convertToThriftType(MSServiceType::CENTRAL));
 }
 
 inline cc::service::language::ServiceType::type YamlServiceHandler::convertToThriftType(
@@ -413,8 +414,9 @@ inline cc::service::language::ServiceType::type YamlServiceHandler::convertToThr
   typedef model::Microservice::ServiceType MSServiceType;
   switch(type_)
   {
-    case MSServiceType::INTERNAL: return ServiceType::Internal;
-    case MSServiceType::EXTERNAL: return ServiceType::External;
+    case MSServiceType::PRODUCT: return ServiceType::Product;
+    case MSServiceType::INTEGRATION: return ServiceType::Integration;
+    case MSServiceType::CENTRAL: return ServiceType::Central;
   }
 }
 
@@ -424,8 +426,9 @@ inline model::Microservice::ServiceType YamlServiceHandler::convertToModelType(
   typedef model::Microservice::ServiceType MSServiceType;
   switch(type_)
   {
-    case ServiceType::Internal: return MSServiceType::INTERNAL;
-    case ServiceType::External: return MSServiceType::EXTERNAL;
+    case ServiceType::Product: return MSServiceType::PRODUCT;
+    case ServiceType::Integration: return MSServiceType::INTEGRATION;
+    case ServiceType::Central: return MSServiceType::CENTRAL;
   }
 }
 

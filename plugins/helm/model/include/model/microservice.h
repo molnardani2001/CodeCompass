@@ -21,8 +21,9 @@ struct Microservice
 {
   enum class ServiceType
   {
-    INTERNAL,
-    EXTERNAL
+    PRODUCT,
+    INTEGRATION,
+    CENTRAL
   };
 
   #pragma db id

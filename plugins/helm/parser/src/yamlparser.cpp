@@ -206,7 +206,7 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
           model::Microservice service;
           service.file = file_->id;
           service.name = YAML::Dump(loadedFile["name"]);
-          service.type = model::Microservice::ServiceType::INTERNAL;
+          service.type = model::Microservice::ServiceType::INTEGRATION;
           service.serviceId = cc::model::createIdentifier(service);
           service.version = YAML::Dump(loadedFile["version"]);
           _ctx.db->persist(service);
@@ -268,13 +268,13 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
  */
 void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& loadedFile_)
 {
-  if (!loadedFile_["dependencies"] || !loadedFile_["dependencies"].IsSequence())
-  {
+  //if (!loadedFile_["dependencies"] || !loadedFile_["dependencies"].IsSequence())
+  //{
     //_areDependenciesListed = false;
 
     model::Microservice service;
     service.file = file_->id;
-    service.type = model::Microservice::ServiceType::INTERNAL;
+    service.type = model::Microservice::ServiceType::PRODUCT;
     service.name = YAML::Dump(loadedFile_["name"]);
     service.version = YAML::Dump(loadedFile_["version"]);
 
@@ -285,8 +285,8 @@ void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& load
       _processedMS.push_back(service.name);
     }
 
-    return;
-  }
+  //  return;
+  //}
 
   util::OdbTransaction {_ctx.db} ([&]
   {
@@ -296,7 +296,7 @@ void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& load
     {
       model::Microservice service;
       service.file = file_->id;
-      service.type = model::Microservice::ServiceType::INTERNAL;
+      service.type = model::Microservice::ServiceType::INTEGRATION;
       service.version = YAML::Dump((*iter)["version"]);
 
       if ((*iter)["alias"])
