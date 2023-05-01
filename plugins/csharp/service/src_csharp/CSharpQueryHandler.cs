@@ -576,12 +576,12 @@ public class CSharpQueryHandler : CsharpService.IAsync
         CancellationToken cancellationToken = default(CancellationToken))
     {
         var node = queryCsharpAstNode(astNodeId);  
-        // Console.WriteLine("getreferencesasync NODE");
-        // Console.WriteLine("getreferencesasync astsymboltype: " + node.AstSymbolType);  
-        // Console.WriteLine("getreferencesasync asttype: " + node.AstType);
-        // Console.WriteLine("getreferencesasync astvalue: " + node.AstValue);     
-        // Console.WriteLine("getreferencesasync reftype: " + (ReferenceType)referenceId);
-        // Console.WriteLine("getreferencesasync refid: " + referenceId);
+         Console.WriteLine("getreferencesasync NODE");
+         Console.WriteLine("getreferencesasync astsymboltype: " + node.AstSymbolType);  
+         Console.WriteLine("getreferencesasync asttype: " + node.AstType);
+         Console.WriteLine("getreferencesasync astvalue: " + node.AstValue);     
+         Console.WriteLine("getreferencesasync reftype: " + (ReferenceType)referenceId);
+         Console.WriteLine("getreferencesasync refid: " + referenceId);
         var ret = new List<language.AstNodeInfo>();
         switch ((ReferenceType)referenceId)
         {
@@ -589,6 +589,11 @@ public class CSharpQueryHandler : CsharpService.IAsync
                 ret = createAstNodeInfoList(queryInvocations(node));
                 break;
             case ReferenceType.DEFINITION:
+                Console.WriteLine("inside DEFINITION");
+                var nodes = new List<CsharpAstNode>();
+                nodes.Add(node);
+                ret = createAstNodeInfoList(nodes); //experimental
+                break;
             case ReferenceType.DECLARATION:
                 ret = createAstNodeInfoList(queryDeclarators(node));
                 break;

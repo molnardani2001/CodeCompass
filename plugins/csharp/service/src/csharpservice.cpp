@@ -95,6 +95,7 @@ void CsharpServiceHandler::getAstNodeInfoByPosition(
       FileQuery::id == std::stoull(fpos_.file));
   });
   _csharpQueryHandler.getAstNodeInfoByPosition(return_, file->path, fpos_.pos);
+  return_.range.file = fpos_.file; //so that getFileInfo requests contain the file id.
 }
 
 void CsharpServiceHandler::getSourceText(
@@ -108,7 +109,7 @@ void CsharpServiceHandler::getSourceText(
 
   return_ = _transaction([&, this](){
       model::FilePtr file = _db->query_one<model::File>(
-              FileQuery::id == std::stoull(fileRange.file));
+              FileQuery::path == /*std::stoull(*/fileRange.file/*)*/); // id volt
 
       if (!file) {
         return std::string();
@@ -423,7 +424,7 @@ void CsharpServiceHandler::getReferences(
         const std::vector<std::string>& tags_)
 {
   LOG(info) << "getReferences";
-  _csharpQueryHandler.getReferences(return_, astNodeId_, referenceId_, tags_);
+  _csharpQueryHandler.getReferences(return_, astNodeId_, referenceId_, {});
   std::vector<AstNodeInfo> ret;
   for (AstNodeInfo nodeinfo : return_)
   {
