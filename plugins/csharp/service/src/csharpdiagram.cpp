@@ -46,8 +46,18 @@ std::string graphHtmlTag(
     .append(">");
 }
 
+void removeAccessibilityTags(std::string& str){
+  std::vector<std::string> accessibilityTags = 
+    {"public", "private", "protected", "internal", "protected internal", "private protected"};
+  for (auto const& tag : accessibilityTags){
+    if (str.find(tag) != std::string::npos)
+    {
+      str.erase(0,str.find(tag) + tag.length() + 1); 
+    }
+  } 
 }
 
+}
 namespace cc
 {
 namespace service
@@ -241,63 +251,15 @@ void CsharpDiagram::getDetailedClassDiagram(
 
   // Center node 
 
-  //LOG(info) << "CENTER ASTNODE: " << centerNodeInfo_.astNodeValue;
   AstNodeInfo nodeInfo = centerNodeInfo_;
   nodeInfo.astNodeValue = nodeInfo.astNodeValue.substr(0,nodeInfo.astNodeValue.find('{'));
+  removeAccessibilityTags(nodeInfo.astNodeValue);
+
   util::Graph::Node centerNode = addNode(graph_, nodeInfo);
   graph_.setNodeAttribute(centerNode,"label",
     getDetailedClassNodeLabel(nodeInfo,propertyNodeInfos_,methodNodeInfos_),
     true);
   graph_.setNodeAttribute(centerNode,"shape", "none");
-
-//   _cppHandler.getReferences(
-//     nodes, astNodeId_, CppServiceHandler::DEFINITION, {});
-
-//   if (nodes.empty())
-//     return;
-
-//   AstNodeInfo nodeInfo = nodes.front();
-
-//   util::Graph::Node currentNode = addNode(graph_, nodeInfo);
-//   graph_.setNodeAttribute(currentNode, "label",
-//     getDetailedClassNodeLabel(nodeInfo), true);
-//   graph_.setNodeAttribute(currentNode, "shape", "none");
-
-//   nodes.clear();
-
-//   //--- Types from which the queried type inherits ---//
-
-//   _cppHandler.getReferences(nodes, nodeInfo.id,
-//     CppServiceHandler::INHERIT_FROM, {});
-
-//   for (const AstNodeInfo& node : nodes)
-//   {
-//     util::Graph::Node inheritNode = addNode(graph_, node);
-//     graph_.setNodeAttribute(inheritNode, "label",
-//       getDetailedClassNodeLabel(node), true);
-//     graph_.setNodeAttribute(inheritNode, "shape", "none");
-
-//     util::Graph::Edge edge = graph_.createEdge(currentNode, inheritNode);
-//     decorateEdge(graph_, edge, inheritClassEdgeDecoration);
-//   }
-
-//   nodes.clear();
-
-//   //--- Types by which the queried type is inherited ---//
-
-//   _cppHandler.getReferences(nodes, nodeInfo.id,
-//     CppServiceHandler::INHERIT_BY, {});
-
-//   for (const AstNodeInfo& node : nodes)
-//   {
-//     util::Graph::Node inheritNode = addNode(graph_, node);
-//     graph_.setNodeAttribute(inheritNode, "label",
-//       getDetailedClassNodeLabel(node), true);
-//     graph_.setNodeAttribute(inheritNode, "shape", "none");
-
-//     util::Graph::Edge edge = graph_.createEdge(inheritNode, currentNode);
-//     decorateEdge(graph_, edge, inheritClassEdgeDecoration);
-//   }
 }
 
 std::string CsharpDiagram::getDetailedClassNodeLabel(
@@ -317,9 +279,13 @@ std::string CsharpDiagram::getDetailedClassNodeLabel(
 
   for (auto it = propertyNodeInfos_.begin(); it != propertyNodeInfos_.end(); ++it)
   {
+    std::string astValueToShow = it->astNodeValue;
+    astValueToShow = astValueToShow.substr(0,astValueToShow.find('{'));
+    removeAccessibilityTags(astValueToShow);
+
     std::string visibility = visibilityToHtml(*it);
     std::string content = memberContentToHtml(*it,
-      util::escapeHtml(it->astNodeValue.substr(0,it->astNodeValue.find('{')))/* + " : " + getProperty(it->id, "Type")*/);
+      util::escapeHtml(astValueToShow));
 
     std::string attr = colAttr;
     if (it == propertyNodeInfos_.end() - 1)
@@ -338,8 +304,12 @@ std::string CsharpDiagram::getDetailedClassNodeLabel(
 
     if (!node.astNodeValue.empty())
     {
+      std::string astValueToShow = node.astNodeValue;
+      astValueToShow = astValueToShow.substr(0,astValueToShow.find('{'));
+      removeAccessibilityTags(astValueToShow);
+
       std::string content = memberContentToHtml(node,
-        util::escapeHtml(node.astNodeValue.substr(0,node.astNodeValue.find('{'))));
+        util::escapeHtml(astValueToShow));
 
       label += graphHtmlTag("tr",
         graphHtmlTag("td", visibility, colAttr) +
@@ -358,7 +328,13 @@ std::string CsharpDiagram::visibilityToHtml(const AstNodeInfo& node_)
     return graphHtmlTag("font", "+", "color='green'");
   if (contains(node_.tags, "Private"))
     return graphHtmlTag("font", "-", "color='red'");
+  if (contains(node_.tags, "Private protected"))
+    return graphHtmlTag("font", "-", "color='red'");
   if (contains(node_.tags, "Protected"))
+    return graphHtmlTag("font", "#", "color='blue'");
+  if (contains(node_.tags, "Internal"))
+    return graphHtmlTag("font", "#", "color='blue'");
+  if (contains(node_.tags, "Protected internal"))
     return graphHtmlTag("font", "#", "color='blue'");
 
   return "";

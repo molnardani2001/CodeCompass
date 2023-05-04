@@ -590,9 +590,10 @@ public class CSharpQueryHandler : CsharpService.IAsync
                 break;
             case ReferenceType.DEFINITION:
                 Console.WriteLine("inside DEFINITION");
-                var nodes = new List<CsharpAstNode>();
-                nodes.Add(node);
-                ret = createAstNodeInfoList(nodes); //experimental
+                // var nodes = new List<CsharpAstNode>();
+                // nodes.Add(node);
+                // ret = createAstNodeInfoList(nodes); //experimental
+                ret = createAstNodeInfoList(queryDeclarators(node));
                 break;
             case ReferenceType.DECLARATION:
                 ret = createAstNodeInfoList(queryDeclarators(node));
