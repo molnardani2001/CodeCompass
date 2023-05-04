@@ -136,11 +136,10 @@ function (topic, Menu, MenuItem, PopupMenuItem, astHelper, model, urlHandler, vi
         }
       }));
 
-      //if (Object.keys(diagramTypes).length !== 0)
-        return new PopupMenuItem({
-          label : 'C# Diagrams',
-          popup : submenu
-        });
+      return new PopupMenuItem({
+        label : 'C# Diagrams',
+        popup : submenu
+      });
     }
   };
 
