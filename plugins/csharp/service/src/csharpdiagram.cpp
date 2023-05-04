@@ -53,6 +53,7 @@ void removeAccessibilityTags(std::string& str){
     if (str.find(tag) != std::string::npos)
     {
       str.erase(0,str.find(tag) + tag.length() + 1); 
+      break;
     }
   } 
 }
@@ -252,8 +253,8 @@ void CsharpDiagram::getDetailedClassDiagram(
   // Center node 
 
   AstNodeInfo nodeInfo = centerNodeInfo_;
-  nodeInfo.astNodeValue = nodeInfo.astNodeValue.substr(0,nodeInfo.astNodeValue.find('{'));
   removeAccessibilityTags(nodeInfo.astNodeValue);
+  nodeInfo.astNodeValue = nodeInfo.astNodeValue.substr(0,nodeInfo.astNodeValue.find('{'));
 
   util::Graph::Node centerNode = addNode(graph_, nodeInfo);
   graph_.setNodeAttribute(centerNode,"label",
@@ -280,8 +281,8 @@ std::string CsharpDiagram::getDetailedClassNodeLabel(
   for (auto it = propertyNodeInfos_.begin(); it != propertyNodeInfos_.end(); ++it)
   {
     std::string astValueToShow = it->astNodeValue;
-    astValueToShow = astValueToShow.substr(0,astValueToShow.find('{'));
     removeAccessibilityTags(astValueToShow);
+    astValueToShow = astValueToShow.substr(0,astValueToShow.find('{'));
 
     std::string visibility = visibilityToHtml(*it);
     std::string content = memberContentToHtml(*it,
@@ -305,8 +306,8 @@ std::string CsharpDiagram::getDetailedClassNodeLabel(
     if (!node.astNodeValue.empty())
     {
       std::string astValueToShow = node.astNodeValue;
-      astValueToShow = astValueToShow.substr(0,astValueToShow.find('{'));
       removeAccessibilityTags(astValueToShow);
+      astValueToShow = astValueToShow.substr(0,astValueToShow.find('{'));
 
       std::string content = memberContentToHtml(node,
         util::escapeHtml(astValueToShow));
