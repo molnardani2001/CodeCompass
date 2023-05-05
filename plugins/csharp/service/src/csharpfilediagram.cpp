@@ -269,7 +269,6 @@ std::string CsharpFileDiagram::getExternalUsersDiagramLegend()
 
   builder.addNode("center file", centerNodeDecoration);
   builder.addNode("directory", directoryNodeDecoration);
-  builder.addNode("source file", sourceFileNodeDecoration);
 
   builder.addEdge("sub directory", subdirEdgeDecoration);
   builder.addEdge("used by", revUsagesEdgeDecoration);
@@ -339,6 +338,7 @@ void CsharpFileDiagram::getSubsystemDependencyDiagram(
   _projectHandler.getFileInfo(fileInfo, fileId_);
   util::Graph::Node currentNode = addNode(graph_, fileInfo);
   decorateNode(graph_, currentNode, centerNodeDecoration);
+  decorateNode(graph_, currentNode, directoryNodeDecoration);
 
   std::set<util::Graph::Node> subdirs = util::bfsBuild(graph_, currentNode,
     std::bind(&CsharpFileDiagram::getSubDirs, this, std::placeholders::_1,

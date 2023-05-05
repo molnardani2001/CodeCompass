@@ -204,6 +204,7 @@ void CsharpDiagram::getFunctionCallDiagram(
   // Center node
   LOG(info) << "CENTER ASTNODE: " << centerNodeInfo_.astNodeValue;
   AstNodeInfo nodeInfo = centerNodeInfo_;
+  removeAccessibilityTags(nodeInfo.astNodeValue);
   nodeInfo.astNodeValue = nodeInfo.astNodeValue.substr(0,nodeInfo.astNodeValue.find('{'));
   util::Graph::Node centerNode = addNode(graph_, nodeInfo);
   decorateNode(graph_, centerNode, centerNodeDecoration);
@@ -213,6 +214,7 @@ void CsharpDiagram::getFunctionCallDiagram(
   for (const auto& calleeNodeInfo : calleeNodeInfos_)
   {
     AstNodeInfo calleeInfo = calleeNodeInfo;
+    removeAccessibilityTags(calleeInfo.astNodeValue);
     calleeInfo.astNodeValue = calleeInfo.astNodeValue.substr(0,calleeInfo.astNodeValue.find('{'));
     util::Graph::Node calleeNode = addNode(graph_, calleeInfo);
     decorateNode(graph_, centerNode, calleeNodeDecoration);
@@ -229,6 +231,7 @@ void CsharpDiagram::getFunctionCallDiagram(
   for (const auto& callerNodeInfo : callerNodeInfos_)
   {
     AstNodeInfo callerInfo = callerNodeInfo;
+    removeAccessibilityTags(callerInfo.astNodeValue);
     callerInfo.astNodeValue = callerInfo.astNodeValue.substr(0,callerInfo.astNodeValue.find('{'));
     util::Graph::Node callerNode = addNode(graph_, callerInfo);
     decorateNode(graph_, centerNode, callerNodeDecoration);
