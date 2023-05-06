@@ -143,6 +143,21 @@ namespace CSharpParser
                 DbContext.CsharpNamespaces.Add(csharpNamespace);
             }
 
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                //ParentNode = DbContext.CsharpAstNodes.Find(astNode.Id),
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.ToString(),
+                //QualifiedType = type,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
+
             base.VisitNamespaceDeclaration(node);
         }
 
@@ -178,7 +193,22 @@ namespace CSharpParser
                 QualifiedName = qName,
                 DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
                 EntityHash = astNode.EntityHash
-            };            
+            };    
+
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                //ParentNode = DbContext.CsharpAstNodes.Find(astNode.Id),
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.ToString(),
+                //QualifiedType = type,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);        
 
             foreach (PropertyDeclarationSyntax propertyDeclaration in node.Members.OfType<PropertyDeclarationSyntax>())
             {
@@ -230,6 +260,21 @@ namespace CSharpParser
                 DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
                 EntityHash = astNode.EntityHash
             };
+
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                //ParentNode = DbContext.CsharpAstNodes.Find(astNode.Id),
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.ToString(),
+                //QualifiedType = type,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
 
             foreach (VariableDeclarationSyntax variableDeclaration in node.Members.OfType<VariableDeclarationSyntax>())
             {
@@ -329,6 +374,21 @@ namespace CSharpParser
                 EntityHash = astNode.EntityHash
             };
 
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                //ParentNode = DbContext.CsharpAstNodes.Find(astNode.Id),
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.ToString(),
+                //QualifiedType = type,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
+
             foreach (var variableDeclaration in node.Members.OfType<FieldDeclarationSyntax>())
             {
                 //WriteLine($"Variable name: {variableDeclaration.Variables.First().Identifier}");
@@ -427,6 +487,21 @@ namespace CSharpParser
                 EntityHash = astNode.EntityHash
             };
 
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                //ParentNode = DbContext.CsharpAstNodes.Find(astNode.Id),
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.ToString(),
+                //QualifiedType = type,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
+
             foreach (var variableDeclaration in node.Members.OfType<FieldDeclarationSyntax>())
             {
                 //WriteLine($"Variable name: {variableDeclaration.Variables.First().Identifier}");
@@ -518,6 +593,21 @@ namespace CSharpParser
                 MethodType = MethodTypeEnum.Delegate
             };
 
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                ParentNode = parent,
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.ToString(),
+                //QualifiedType = type,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
+
             if (node.ParameterList.Parameters.Count > 0)
             {
                 VisitMethodParameters(node.ParameterList.Parameters, astNode);
@@ -551,6 +641,21 @@ namespace CSharpParser
                 ParentNode = parent,
                 MethodType = MethodTypeEnum.Destuctor
             };
+
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                ParentNode = parent,
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.ToString(),
+                //QualifiedType = type,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
 
             if (node.ParameterList.Parameters.Count > 0)
             {
@@ -590,6 +695,21 @@ namespace CSharpParser
                 ParentNode = parent,
                 MethodType = MethodTypeEnum.Constructor
             };
+
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                ParentNode = parent,
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.ToString(),
+                //QualifiedType = type,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
 
             if (node.ParameterList.Parameters.Count > 0)
             {
@@ -643,6 +763,21 @@ namespace CSharpParser
                 MethodType = MethodTypeEnum.Method
             };
 
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                ParentNode = parent,
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.ToString(),
+                QualifiedType = qType,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
+
             if (node.ParameterList.Parameters.Count > 0)
             {
                 VisitMethodParameters(node.ParameterList.Parameters,astNode);
@@ -695,6 +830,21 @@ namespace CSharpParser
                 ParentNode = parent,
                 MethodType = MethodTypeEnum.Operator
             };
+
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                ParentNode = parent,
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = Name,
+                QualifiedType = qType,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
 
             if (node.ParameterList.Parameters.Count > 0)
             {
@@ -787,6 +937,26 @@ namespace CSharpParser
                 };
                 DbContext.CsharpVariables.Add(csharpVariable);
             }
+
+            // var astNode2 = AstNode(node, AstSymbolTypeEnum.Variable);
+            // System.Console.WriteLine("success");
+            // if (astNode2 != null)
+            // {
+            //     System.Console.WriteLine(astNode2.AstValue);
+            //     CsharpEtcEntity expr = new CsharpEtcEntity
+            //     {
+            //         AstNode = astNode2,
+            //         DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+            //         EntityHash = astNode2.EntityHash,
+            //         ParentNode = parent,
+            //         //EtcEntityType = EtcEntityTypeEnum.Invocation,
+            //         DeclaratorNodeId = astNode2.Id,
+            //         //Name = node.ToString()
+            //         //QualifiedType = varQType,
+            //         //QualifiedName = Model.GetDeclaredSymbol(node).ToString()                             
+            //     };                            
+            //     DbContext.CsharpEtcEntitys.Add(expr);
+            // }
         }
 
         private void VisitPropertyDecl(PropertyDeclarationSyntax node, CsharpAstNode parent)
@@ -814,6 +984,21 @@ namespace CSharpParser
                 ParentNode = parent
             };
             DbContext.CsharpVariables.Add(variable);
+
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                ParentNode = parent,
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.Identifier.Text,
+                QualifiedType = varQType,
+                //QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
         }
 
         private void VisitAccessors(AccessorListSyntax node, String propertyName, CsharpAstNode parent)
@@ -903,6 +1088,21 @@ namespace CSharpParser
                 EntityHash = astNode.EntityHash
             };
 
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                //ParentNode = parent,
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.Identifier.Text,
+                //QualifiedType = varQType,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
+
             foreach (EnumMemberDeclarationSyntax enumMemberDeclarationSyntax in node.Members)
             {
                 csharpEnum.AddMember(VisitEnumMemberDecl(enumMemberDeclarationSyntax, astNode));
@@ -931,6 +1131,22 @@ namespace CSharpParser
                 EntityHash = astNode.EntityHash,
                 ParentNode = parent
             };
+
+            //var astNode = AstNode(node, AstSymbolTypeEnum.EtcEntity, AstTypeEnum.Declaration);
+            CsharpEtcEntity expr = new CsharpEtcEntity
+            {
+                AstNode = astNode,
+                DocumentationCommentXML = Model.GetDeclaredSymbol(node).GetDocumentationCommentXml(),
+                EntityHash = astNode.EntityHash,
+                ParentNode = parent,
+                //EtcEntityType = EtcEntityTypeEnum.Invocation,
+                DeclaratorNodeId = astNode.Id,
+                Name = node.Identifier.Text,
+                //QualifiedType = varQType,
+                QualifiedName = qName                              
+            };                            
+            DbContext.CsharpEtcEntitys.Add(expr);
+
             if (node.EqualsValue != null)
             {
                 try

@@ -51,6 +51,11 @@ function (declare, array, dom, style, topic, on, ContentPane, ResizeHandle,
   var colorIdx = 0;
 
   /**
+   * This element contains the data related to the current file.
+   */
+  var fileInfo = null;
+
+  /**
    * Default properties of boxes.
    */
   var defaults = {
@@ -91,7 +96,7 @@ function (declare, array, dom, style, topic, on, ContentPane, ResizeHandle,
 
     //--- Set content ---//
 
-    var fileInfo = model.project.getFileInfo(astNodeInfo.range.file);
+    fileInfo = model.project.getFileInfo(astNodeInfo.range.file);
 
     languageService = model.getLanguageService(fileInfo.type);
     if (astNodeInfo.astNodeType !== 'Definition')
@@ -117,18 +122,29 @@ function (declare, array, dom, style, topic, on, ContentPane, ResizeHandle,
 
     dom.place(newElement.domNode, panel.domNode);
 
-    if (parent)
-      newElement.connection = panel._jsPlumbInstance.connect({
-        source     : parent.domNode,
-        target     : newElement.domNode,
-        paintStyle : { stroke : colors[colorIdx], strokeWidth : 2 },
-        Anchors  : ['Perimeter', { shape : 'Ellipse' }],
-        Endpoint : ['Dot', { radius : 1 }],
-        overlays   : [['Label', {
-          label    : astNodeInfo.astNodeValue,
-          cssClass : 'cb-label cb-label-' + colorIdx
-        }]]
-      });
+    if (parent){
+      if (fileInfo.type === "CS"){
+        newElement.connection = panel._jsPlumbInstance.connect({
+          source     : parent.domNode,
+          target     : newElement.domNode,
+          paintStyle : { stroke : colors[colorIdx], strokeWidth : 2 }
+        });
+      }
+      else{
+        newElement.connection = panel._jsPlumbInstance.connect({
+          source     : parent.domNode,
+          target     : newElement.domNode,
+          paintStyle : { stroke : colors[colorIdx], strokeWidth : 2 },
+          Anchors  : ['Perimeter', { shape : 'Ellipse' }],
+          Endpoint : ['Dot', { radius : 1 }],
+          overlays   : [['Label', {
+            label    : astNodeInfo.astNodeValue,
+            cssClass : 'cb-label cb-label-' + colorIdx
+          }]]
+        });
+      }
+    }
+
 
     if (window.gtag) {
       window.gtag ('event', 'code_bites', {
@@ -353,15 +369,17 @@ function (declare, array, dom, style, topic, on, ContentPane, ResizeHandle,
           astNodeInfo.id, refTypes["Definition"])[0];
 
       //--- Check if it's necessary to open a new box ---//
-
-      if (astNodeInfo.id === defAstNodeInfo.id)
-        return;
-
-      if (hasRow(this.row + 1) &&
-        array.some(elementMatrix[this.row + 1], function (element) {
-          return element.astNodeInfo.id === defAstNodeInfo.id;
-        }))
-        return;
+      
+      if (fileInfo.type !== "CS"){
+        if (astNodeInfo.id === defAstNodeInfo.id)
+          return;
+  
+        if (hasRow(this.row + 1) &&
+          array.some(elementMatrix[this.row + 1], function (element) {
+            return element.astNodeInfo.id === defAstNodeInfo.id;
+          }))
+          return;
+      }
 
       //--- Color selection and open new box ---//
 

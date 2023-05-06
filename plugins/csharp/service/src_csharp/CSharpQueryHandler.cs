@@ -143,6 +143,17 @@ public class CSharpQueryHandler : CsharpService.IAsync
         }
     }
 
+    private List<CsharpAstNode> queryDeclaratorsForCodeBites(CsharpAstNode astNode)
+    {
+        var ret = dbContext.CsharpEtcEntitys
+            .Where(e => e.AstNode.Id == astNode.Id &&
+                e.DeclaratorNodeId == 1)
+            .Select(e => e.AstNode)
+            .ToList();
+
+        return ret;
+    }
+
     private List<CsharpAstNode> queryEvals(CsharpAstNode astNode)
     {
         var ret = 
@@ -593,6 +604,7 @@ public class CSharpQueryHandler : CsharpService.IAsync
                 // var nodes = new List<CsharpAstNode>();
                 // nodes.Add(node);
                 // ret = createAstNodeInfoList(nodes); //experimental
+                //ret = createAstNodeInfoList(queryDeclarators(node));
                 ret = createAstNodeInfoList(queryDeclarators(node));
                 break;
             case ReferenceType.DECLARATION:
@@ -648,16 +660,17 @@ public class CSharpQueryHandler : CsharpService.IAsync
                     " ReferenceType is unhandled");
                 break;
         }
-        System.Console.WriteLine("getreferencesasync result: ");
-        foreach(var r in ret){
-            System.Console.WriteLine("nodeinfo: ",r.AstNodeType);
-            System.Console.WriteLine(r.AstNodeValue);
-            foreach(var tag in r.Tags)
-            {
-                System.Console.WriteLine(tag);
-            }
+        if (ret.Any())
+            System.Console.WriteLine("getreferencesasync result: ", ret.First());
+        // foreach(var r in ret){
+        //     System.Console.WriteLine("nodeinfo: ",r.AstNodeType);
+        //     System.Console.WriteLine(r.AstNodeValue);
+        //     foreach(var tag in r.Tags)
+        //     {
+        //         System.Console.WriteLine(tag);
+        //     }
 
-        }
+        // }
         return await Task.FromResult(ret);        
     }
 
