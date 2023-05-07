@@ -204,6 +204,7 @@ public class CSharpQueryHandler : CsharpService.IAsync
             join node in dbContext.CsharpAstNodes
                 on invoc.DeclaratorNodeId equals node.Id 
             where node.AstSymbolType == AstSymbolTypeEnum.Method
+                && invoc.DeclaratorNodeId != invoc.AstNode.Id
                 && invoc.AstNode.Path == astNode.Path  
                 && invoc.AstNode.Location_range_start_line >= astNode.Location_range_start_line  
                 && invoc.AstNode.Location_range_end_line <= astNode.Location_range_end_line                     
@@ -218,6 +219,7 @@ public class CSharpQueryHandler : CsharpService.IAsync
             join node in dbContext.CsharpAstNodes
                 on invoc.DeclaratorNodeId equals node.Id 
             where node.AstSymbolType == AstSymbolTypeEnum.Method
+                && invoc.DeclaratorNodeId != invoc.AstNode.Id
                 && invoc.AstNode.Path == astNode.Path  
                 && invoc.AstNode.Location_range_start_line >= astNode.Location_range_start_line  
                 && invoc.AstNode.Location_range_end_line <= astNode.Location_range_end_line       
@@ -228,7 +230,8 @@ public class CSharpQueryHandler : CsharpService.IAsync
     private List<CsharpAstNode> queryCallers(CsharpAstNode astNode)
     {
         var invocations = dbContext.CsharpEtcEntitys
-            .Where(e => e.DeclaratorNodeId == astNode.Id)
+            .Where(e => e.DeclaratorNodeId == astNode.Id &&
+                e.DeclaratorNodeId != e.AstNode.Id)
             .Select(e => e.AstNode);
         var ret = 
             from invoc in invocations
