@@ -589,13 +589,7 @@ public class CSharpQueryHandler : CsharpService.IAsync
         int referenceId, List<string> tags, 
         CancellationToken cancellationToken = default(CancellationToken))
     {
-        var node = queryCsharpAstNode(astNodeId);  
-         Console.WriteLine("getreferencesasync NODE");
-         Console.WriteLine("getreferencesasync astsymboltype: " + node.AstSymbolType);  
-         Console.WriteLine("getreferencesasync asttype: " + node.AstType);
-         Console.WriteLine("getreferencesasync astvalue: " + node.AstValue);     
-         Console.WriteLine("getreferencesasync reftype: " + (ReferenceType)referenceId);
-         Console.WriteLine("getreferencesasync refid: " + referenceId);
+        var node = queryCsharpAstNode(astNodeId);
         var ret = new List<language.AstNodeInfo>();
         switch ((ReferenceType)referenceId)
         {
@@ -603,11 +597,6 @@ public class CSharpQueryHandler : CsharpService.IAsync
                 ret = createAstNodeInfoList(queryInvocations(node));
                 break;
             case ReferenceType.DEFINITION:
-                Console.WriteLine("inside DEFINITION");
-                // var nodes = new List<CsharpAstNode>();
-                // nodes.Add(node);
-                // ret = createAstNodeInfoList(nodes); //experimental
-                //ret = createAstNodeInfoList(queryDeclarators(node));
                 ret = createAstNodeInfoList(queryDeclarators(node));
                 break;
             case ReferenceType.DECLARATION:
@@ -663,17 +652,7 @@ public class CSharpQueryHandler : CsharpService.IAsync
                     " ReferenceType is unhandled");
                 break;
         }
-        if (ret.Any())
-            System.Console.WriteLine("getreferencesasync result: ", ret.First());
-        // foreach(var r in ret){
-        //     System.Console.WriteLine("nodeinfo: ",r.AstNodeType);
-        //     System.Console.WriteLine(r.AstNodeValue);
-        //     foreach(var tag in r.Tags)
-        //     {
-        //         System.Console.WriteLine(tag);
-        //     }
-
-        // }
+        
         return await Task.FromResult(ret);        
     }
 
@@ -716,32 +695,11 @@ public class CSharpQueryHandler : CsharpService.IAsync
         return await Task.FromResult(new Dictionary<string, int>());
     }
 
-    public async Task<string> getDiagramAsync(string astNodeId, int diagramId, 
-        CancellationToken cancellationToken = default(CancellationToken))
-    {
-        return await Task.FromResult("Diagram");
-    }
-
     public async Task<List<language.SyntaxHighlight>> getSyntaxHighlightAsync(FileRange range, 
         List<string> content, 
         CancellationToken cancellationToken = default(CancellationToken))
     {
         return await Task.FromResult(new List<language.SyntaxHighlight>());
-    }
-
-    public async Task<Dictionary<string, int>> getFileDiagramTypesAsync(string fileId, 
-        CancellationToken cancellationToken = default(CancellationToken))  
-    {
-        //TODO: DELETE
-        return await Task.FromResult(new Dictionary<string, int>(){
-            {"TEST DIAGRAM", 999}
-        });
-    }  
-
-    public async Task<string> getFileDiagramAsync(string fileId, int diagramId, 
-        CancellationToken cancellationToken = default(CancellationToken))
-    {   
-        return await Task.FromResult("File Diagram");
     }
 
     public async Task<Dictionary<string, List<string>>> getFileUsagesAsync(string fileId, bool reverse = false,
@@ -817,16 +775,6 @@ public class CSharpQueryHandler : CsharpService.IAsync
             }
         }
 
-        //LOG USED FILES
-        // foreach(var entry in visitedFiles)
-        // {
-        //     Console.WriteLine("Key: ", entry.Key);
-        //     Console.WriteLine("Values:");
-        //     foreach (string value in entry.Value)
-        //     {
-        //         Console.WriteLine(value);
-        //     }
-        // }
         return visitedFiles;
     }
 }

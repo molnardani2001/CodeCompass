@@ -27,6 +27,9 @@ namespace CSharpParser
             this.Edges = edges;       
         }    
 
+        /// <summary>
+        /// Method <c>VisitVariableDeclarator</c> will gather aggregation type of relations.
+        /// </summary>
         public override void VisitVariableDeclarator(VariableDeclaratorSyntax node)
         {
             if (node.Initializer == null) return;
@@ -44,7 +47,7 @@ namespace CSharpParser
                 symbolFilePath == usageFilePath) return;
 
 
-            WriteLine($"Value usageFilePath: {usageFilePath}; symbolFilePath: {symbolFilePath}");
+            // WriteLine($"Value usageFilePath: {usageFilePath}; symbolFilePath: {symbolFilePath}");
 
             CsharpEdge csharpEdge = new CsharpEdge();
             csharpEdge.From = fnvHash(usageFilePath);
@@ -57,6 +60,9 @@ namespace CSharpParser
             base.VisitVariableDeclarator(node);
         }
 
+        /// <summary>
+        /// Method <c>VisitInvocationExpression</c> will gather association type of relations.
+        /// </summary>
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             var methodSymbol = Model.GetSymbolInfo(node).Symbol as IMethodSymbol;
@@ -69,7 +75,7 @@ namespace CSharpParser
                 usageFilePath == null ||
                 symbolFilePath == usageFilePath) return;
 
-            WriteLine($"Value usageFilePath: {usageFilePath}; symbolFilePath: {symbolFilePath}");
+            // WriteLine($"Value usageFilePath: {usageFilePath}; symbolFilePath: {symbolFilePath}");
 
             CsharpEdge csharpEdge = new CsharpEdge();
             csharpEdge.From = fnvHash(usageFilePath);

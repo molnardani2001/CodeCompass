@@ -164,28 +164,14 @@ void CsharpServiceHandler::getDiagram(
       // Center node 
       AstNodeInfo centerInfo;
       getAstNodeInfo(centerInfo,astNodeId_);
-      //logging purposes
-      LOG(info) << "centerastnodeinfo: ";
-      LOG(info) << "astnodetype: " << centerInfo.astNodeType;
-      LOG(info) << "value: " << centerInfo.astNodeValue;
-      LOG(info) << "entityhash: " << centerInfo.entityHash;
-      LOG(info) << "symboltype: " << centerInfo.symbolType;
 
       // Callee nodes
       std::vector<AstNodeInfo> calleeInfos;
       getReferences(calleeInfos,astNodeId_,(int)ReferenceType::CALLEE,{});
-      //logging purposes
-      for (const auto& info : calleeInfos){
-        LOG(info) << "CalleeInfo: " << info.astNodeValue;
-      }
 
       // Caller nodes
       std::vector<AstNodeInfo> callerInfos;
       getReferences(callerInfos,astNodeId_,(int)ReferenceType::CALLER,{});
-      //logging purposes
-      for (const auto& info : calleeInfos){
-        LOG(info) << "CallerInfo: " << info.astNodeValue;
-      }
 
       diagram.getFunctionCallDiagram(graph,centerInfo,calleeInfos,callerInfos);
       break;
@@ -215,10 +201,8 @@ void CsharpServiceHandler::getDiagram(
     }
   }
 
-
   if (graph.nodeCount() != 0)
     return_ = graph.output(util::Graph::SVG);
-  //_csharpQueryHandler.getDiagram(return_, astNodeId_, diagramId_);
 }
 
 void CsharpServiceHandler::getDiagramLegend(
@@ -246,7 +230,6 @@ void CsharpServiceHandler::getFileDiagramTypes(
         const core::FileId& fileId_)
 {
   LOG(info) << "getFileDiagramTypes";
-  //_csharpQueryHandler.getFileDiagramTypes(return_, fileId_); //most irtam
 
   model::FilePtr file = _transaction([&, this](){
     return _db->query_one<model::File>(
@@ -279,17 +262,10 @@ void CsharpServiceHandler::getFileDiagram(
   graph.setAttribute("rankdir", "LR");
 
   switch (diagramId_){
-    case FILE_USAGES: //FILE_USAGES
+    case FILE_USAGES:
     {
       Usages useIds;
       _csharpQueryHandler.getFileUsages(useIds,fileId_,false);
-      // for (const auto& entry : data){
-      //   LOG(info) << "Key: " << entry.first;
-      //   LOG(info) << "Value:";
-      //   for (const auto& value : entry.second){
-      //     LOG(info) << value;
-      //   }
-      // }
       Usages revUseIds;
       _csharpQueryHandler.getFileUsages(revUseIds,fileId_,true);
 
@@ -312,7 +288,6 @@ void CsharpServiceHandler::getFileDiagram(
             FileQuery::id == std::stoull(fileId_)
           );
       });
-      LOG(info) << "MAIN DIR PATH" << directory->path;
 
       //This will contain all the directories from the project
       std::vector<model::FilePtr> directories;
@@ -334,12 +309,6 @@ void CsharpServiceHandler::getFileDiagram(
           sub.push_back(dir);
       }
 
-      //LOGGING: check fetched directories
-      for (const auto& s : sub)
-      {
-        LOG(info) << s->path;
-      }
-
       // Iterate on subddirectories and add a BFS to each CS file
       // under the subdir.
       // Gather for each subdir every BFS for every CS file into
@@ -359,7 +328,6 @@ void CsharpServiceHandler::getFileDiagram(
         for (const model::FilePtr& cs : css)
         {
           std::string id = std::to_string(cs->id);
-          LOG(info) << "Converted CS ID: " << id;
           _csharpQueryHandler.getFileUsages(rev,id,true);
           revs.push_back(rev);
           rev.clear();

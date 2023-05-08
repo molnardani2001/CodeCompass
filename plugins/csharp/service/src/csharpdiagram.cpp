@@ -48,7 +48,7 @@ std::string graphHtmlTag(
 
 void removeAccessibilityTags(std::string& str){
   std::vector<std::string> accessibilityTags = 
-    {"public", "private", "protected", "internal", "protected internal", "private protected"};
+    {"protected internal", "private protected", "public", "private", "protected", "internal"};
   for (auto const& tag : accessibilityTags){
     if (str.find(tag) != std::string::npos)
     {
@@ -74,123 +74,6 @@ CsharpDiagram::CsharpDiagram(
       _transaction(db_),
       _projectHandler(db_, datadir_, context_)
 {
-}
-
-void CsharpDiagram::getClassCollaborationDiagram(
-  util::Graph& graph_,
-  const core::AstNodeId& astNodeId_)
-{
-  std::map<core::AstNodeId, util::Graph::Node> visitedNodes;
-  std::map<GraphNodePair, util::Graph::Edge> visitedEdges;
-  std::vector<AstNodeInfo> relatedNodes;
-  std::vector<AstNodeInfo> nodes;
-
-//   graph_.setAttribute("rankdir", "BT");
-
-//   //--- Center node ---//
-
-//   _cppHandler.getReferences(
-//     nodes, astNodeId_, CppServiceHandler::DEFINITION, {});
-
-//   if (nodes.empty())
-//     return;
-
-//   AstNodeInfo nodeInfo = nodes.front();
-
-//   util::Graph::Node centerNode = addNode(graph_, nodeInfo);
-//   decorateNode(graph_, centerNode, centerClassNodeDecoration);
-//   visitedNodes[nodeInfo.id] = centerNode;
-//   relatedNodes.push_back(nodeInfo);
-
-//   nodes.clear();
-
-//   //--- Types from which the queried type inherits ---//
-
-//   _cppHandler.getReferences(nodes, nodeInfo.id,
-//     CppServiceHandler::INHERIT_FROM, {});
-
-//   for (const AstNodeInfo& node : nodes)
-//   {
-//     util::Graph::Node inheritNode = addNode(graph_, node);
-//     graph_.setNodeAttribute(inheritNode, "label",
-//       node.astNodeValue, true);
-//     decorateNode(graph_, inheritNode, classNodeDecoration);
-
-//     util::Graph::Edge edge = graph_.createEdge(centerNode, inheritNode);
-//     decorateEdge(graph_, edge, inheritClassEdgeDecoration);
-
-//     visitedNodes[node.id] = inheritNode;
-//     relatedNodes.push_back(node);
-//   }
-
-//   nodes.clear();
-
-//   //--- Types by which the queried type is inherited ---//
-
-//   _cppHandler.getReferences(nodes, nodeInfo.id,
-//     CppServiceHandler::INHERIT_BY, {});
-
-//   for (const AstNodeInfo& node : nodes)
-//   {
-//     util::Graph::Node inheritNode = addNode(graph_, node);
-//     graph_.setNodeAttribute(inheritNode, "label",
-//       node.astNodeValue, true);
-//     decorateNode(graph_, inheritNode, classNodeDecoration);
-
-//     util::Graph::Edge edge = graph_.createEdge(inheritNode, centerNode);
-//     decorateEdge(graph_, edge, inheritClassEdgeDecoration);
-
-//     visitedNodes[node.id] = inheritNode;
-//     relatedNodes.push_back(node);
-//   }
-
-//   //--- Get related types for the current and related types ---//
-
-//   for (const AstNodeInfo& relatedNode : relatedNodes)
-//   {
-//     std::vector<AstNodeInfo> dataMembers;
-//     _cppHandler.getReferences(dataMembers, relatedNode.id,
-//       CppServiceHandler::DATA_MEMBER, {});
-
-//     for (const AstNodeInfo& node : dataMembers)
-//     {
-//       std::vector<AstNodeInfo> types;
-//       _cppHandler.getReferences(types, node.id, CppServiceHandler::TYPE, {});
-
-//       if (types.empty())
-//         continue;
-
-//       AstNodeInfo typeInfo = types.front();
-
-//       util::Graph::Node typeNode;
-//       auto it = visitedNodes.find(typeInfo.id);
-//       if (it == visitedNodes.end())
-//       {
-//         typeNode = addNode(graph_, typeInfo);
-//         decorateNode(graph_, typeNode, classNodeDecoration);
-//         visitedNodes.insert(it, std::make_pair(typeInfo.id, typeNode));
-//       }
-//       else
-//         typeNode = it->second;
-
-//       GraphNodePair graphEdge(visitedNodes[relatedNode.id], typeNode);
-//       auto edgeIt = visitedEdges.find(graphEdge);
-//       if (edgeIt == visitedEdges.end())
-//       {
-//         util::Graph::Edge edge =
-//           graph_.createEdge(visitedNodes[relatedNode.id], typeNode);
-//         decorateEdge(graph_, edge, usedClassEdgeDecoration);
-//         graph_.setEdgeAttribute(edge, "label", node.astNodeValue);
-//         visitedEdges.insert(edgeIt, std::make_pair(graphEdge, edge));
-//       }
-//       else
-//       {
-//         std::string oldLabel = graph_.getEdgeAttribute(edgeIt->second, "label");
-//         graph_.setEdgeAttribute(edgeIt->second, "label",
-//           oldLabel + ", " + node.astNodeValue);
-//       }
-//     }
-//   }
 }
 
 void CsharpDiagram::getFunctionCallDiagram(
@@ -253,13 +136,15 @@ void CsharpDiagram::getDetailedClassDiagram(
 {
   graph_.setAttribute("rankdir", "BT");
 
-  // Center node 
+  // Center node - class
 
   AstNodeInfo nodeInfo = centerNodeInfo_;
   removeAccessibilityTags(nodeInfo.astNodeValue);
   nodeInfo.astNodeValue = nodeInfo.astNodeValue.substr(0,nodeInfo.astNodeValue.find('{'));
-
   util::Graph::Node centerNode = addNode(graph_, nodeInfo);
+
+  // Property and method/contructor nodes
+
   graph_.setNodeAttribute(centerNode,"label",
     getDetailedClassNodeLabel(nodeInfo,propertyNodeInfos_,methodNodeInfos_),
     true);
@@ -333,13 +218,13 @@ std::string CsharpDiagram::visibilityToHtml(const AstNodeInfo& node_)
   if (contains(node_.tags, "Private"))
     return graphHtmlTag("font", "-", "color='red'");
   if (contains(node_.tags, "Private protected"))
-    return graphHtmlTag("font", "-", "color='red'");
+    return graphHtmlTag("font", "-#", "color='red'");
   if (contains(node_.tags, "Protected"))
     return graphHtmlTag("font", "#", "color='blue'");
   if (contains(node_.tags, "Internal"))
-    return graphHtmlTag("font", "#", "color='blue'");
+    return graphHtmlTag("font", "~", "color='blue'");
   if (contains(node_.tags, "Protected internal"))
-    return graphHtmlTag("font", "#", "color='blue'");
+    return graphHtmlTag("font", "#~", "color='blue'");
 
   return "";
 }
@@ -364,15 +249,6 @@ std::string CsharpDiagram::memberContentToHtml(
   }
 
   return startTags + util::escapeHtml(content_) + endTags;
-}
-
-std::string CsharpDiagram::getProperty(
-  const core::AstNodeId& astNodeId_,
-  const std::string& property_)
-{
-  // std::map<std::string, std::string> properties;
-  // _cppHandler.getProperties(properties, astNodeId_);
-  // return properties[property_];
 }
 
 util::Graph::Node CsharpDiagram::addNode(
@@ -400,11 +276,16 @@ std::string CsharpDiagram::getDetailedClassLegend()
     {"label", graphHtmlTag("font", "-", "color='red'")}}, true);
   builder.addNode("protected data member", {{"shape", "none"},
     {"label", graphHtmlTag("font", "#", "color='blue'")}}, true);
+  builder.addNode("internal data member", {{"shape", "none"},
+    {"label", graphHtmlTag("font", "~", "color='blue'")}}, true);
+  builder.addNode("private protected data member", {{"shape", "none"},
+    {"label", graphHtmlTag("font", "-#", "color='blue'")}}, true);
+  builder.addNode("protected internal data member", {{"shape", "none"},
+    {"label", graphHtmlTag("font", "#~", "color='blue'")}}, true);
   builder.addNode("static method or data member", {{"shape", "none"},
     {"label", "<b>static</b>"}}, true);
   builder.addNode("virtual method", {{"shape", "none"},
     {"label", "<i>virtual</i>"}}, true);
-  //builder.addEdge("inheritance", inheritClassEdgeDecoration);
 
   return builder.getOutput();
 }
@@ -419,18 +300,6 @@ std::string CsharpDiagram::getFunctionCallLegend()
   builder.addNode("virtual function", virtualNodeDecoration);
   builder.addEdge("called", calleeEdgeDecoration);
   builder.addEdge("caller", callerEdgeDecoration);
-
-  return builder.getOutput();
-}
-
-std::string CsharpDiagram::getClassCollaborationLegend()
-{
-  util::LegendBuilder builder("Class Collaboration CsharpDiagram");
-
-  builder.addNode("center class", centerClassNodeDecoration);
-  builder.addNode("class", classNodeDecoration);
-  builder.addEdge("contained or used class", usedClassEdgeDecoration);
-  builder.addEdge("inheritance", inheritClassEdgeDecoration);
 
   return builder.getOutput();
 }
@@ -514,23 +383,8 @@ const CsharpDiagram::Decoration CsharpDiagram::callerEdgeDecoration = {
   {"color", "red"}
 };
 
-const CsharpDiagram::Decoration CsharpDiagram::centerClassNodeDecoration = {
-  {"style", "filled"},
-  {"fillcolor", "gold"},
-  {"shape", "box"}
-};
-
 const CsharpDiagram::Decoration CsharpDiagram::classNodeDecoration = {
   {"shape", "box"}
-};
-
-const CsharpDiagram::Decoration CsharpDiagram::usedClassEdgeDecoration = {
-  {"style", "dashed"},
-  {"color", "mediumpurple"}
-};
-
-const CsharpDiagram::Decoration CsharpDiagram::inheritClassEdgeDecoration = {
-  {"arrowhead", "empty"}
 };
 
 }
