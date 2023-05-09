@@ -65,11 +65,37 @@ void TemplateAnalyzer::init()
     std::for_each(_fileAstCache.begin(), _fileAstCache.end(),
     [&, this](std::pair<std::string, YAML::Node> pair)
     {
+      std::stringstream path(pair.first);
+      std::string segment;
+      std::vector<std::string> segList;
+
+      while(std::getline(path, segment, '/'))
+      {
+        segList.push_back(segment);
+      }
+
+      auto productIter =
+        std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
+          [&](model::Microservice& service)
+          {
+            return service.type == model::Microservice::ServiceType::PRODUCT;
+          });
+
       auto currentService = std::find_if(_microserviceCache.begin(),
         _microserviceCache.end(),
         [&](model::Microservice& service)
         {
-          return pair.first.find(service.name) != std::string::npos;
+          if (service.type == model::Microservice::ServiceType::PRODUCT)
+          {
+            if (pair.first.find("charts/") == std::string::npos)
+              return true;
+            else
+              return false;
+          }
+
+          for (auto it = segList.rbegin(); it != segList.rend(); ++it)
+            if (*it == service.name)
+              return true;
         });
 
       if (currentService != _microserviceCache.end())
@@ -146,6 +172,7 @@ void TemplateAnalyzer::processServiceDeps(
     {
       return service.name == YAML::Dump(currentFile_["metadata"]["name"]);
     });
+  //LOG(warning) << "service deps: " << serviceIter->name;
 
   // Persist template data to db.
   model::HelmTemplate helmTemplate;// = std::make_shared<model::HelmTemplate>();

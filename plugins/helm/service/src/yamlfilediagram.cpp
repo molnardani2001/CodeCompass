@@ -198,8 +198,17 @@ std::vector<util::Graph::Node> YamlFileDiagram::getDependentServices(
 {
   std::vector<util::Graph::Node> dependencies;
   std::multimap<model::MicroserviceId, std::string> serviceIds = getDependentServiceIds(graph_, node_, reverse_);
+  std::map<model::MicroserviceId, int> edgeCount;
 
-  for (const auto& serviceId : serviceIds)
+  for (const auto& p : serviceIds)
+  {
+    if (edgeCount.find(p.first) != edgeCount.end())
+      ++edgeCount.at(p.first);
+    else
+      edgeCount.insert(std::make_pair(p.first, 1));
+  }
+
+  for (const auto& serviceId : edgeCount)
   {
     _transaction([&, this]{
       MicroserviceResult res = _db->query<model::Microservice>(
@@ -209,7 +218,7 @@ std::vector<util::Graph::Node> YamlFileDiagram::getDependentServices(
       dependencies.push_back(newNode);
       util::Graph::Edge edge;
       edge = reverse_ ? graph_.createEdge(newNode, node_) : graph_.createEdge(node_, newNode);
-      decorateEdge(graph_, edge, {{"label", serviceId.second}});
+      decorateEdge(graph_, edge, {{"label", std::to_string(serviceId.second)}});
     });
   }
 
@@ -467,6 +476,29 @@ std::vector<util::Graph::Node> YamlFileDiagram::getResources(
   });
 
   return resources;
+}
+
+void YamlFileDiagram::depthFirstSearch(
+  util::Graph::Node& node,
+  std::unordered_set<util::Graph::Node>& visited,
+  std::vector<util::Graph::Node>& path,
+  std::vector<std::vector<util::Graph::Node>>& circles,
+  util::Graph& graph)
+{
+  /*visited.insert(node);
+  path.push_back(node);
+
+  for (int neighbor : node.) {
+    if (visited.find(neighbor) == visited.end()) {
+      depthFirstSearch(neighbor, visited, path, circles, graph);
+    }
+    else if (find(path.begin(), path.end(), neighbor) != path.end()) {
+      vector<int> circle(path.begin() + distance(path.begin(), find(path.begin(), path.end(), neighbor)), path.end());
+      circles.push_back(circle);
+    }
+  }
+
+  path.pop_back();*/
 }
 
 std::string YamlFileDiagram::graphHtmlTag(

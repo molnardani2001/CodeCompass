@@ -134,6 +134,13 @@ private:
     util::Graph& graph_,
     const util::Graph::Node& node_);
 
+  void depthFirstSearch(
+    util::Graph::Node& node,
+    std::unordered_set<util::Graph::Node>& visited,
+    std::vector<util::Graph::Node>& path,
+    std::vector<std::vector<util::Graph::Node>>& circles,
+    util::Graph& graph);
+
   std::string graphHtmlTag(
     const std::string& tag_,
     const std::string& content_,
