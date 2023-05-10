@@ -36,7 +36,9 @@ TemplateAnalyzer::TemplateAnalyzer(
   {
     util::OdbTransaction{_ctx.db}([this]
     {
-      for (const model::Microservice& service : _ctx.db->query<model::Microservice>())
+      for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
+        odb::query<model::Microservice>::type == model::Microservice::ServiceType::INTEGRATION ||
+        odb::query<model::Microservice>::type == model::Microservice::ServiceType::CENTRAL))
       {
         _microserviceCache.push_back(service);
       }
@@ -65,7 +67,7 @@ void TemplateAnalyzer::init()
     std::for_each(_fileAstCache.begin(), _fileAstCache.end(),
     [&, this](std::pair<std::string, YAML::Node> pair)
     {
-      std::stringstream path(pair.first);
+      /*std::stringstream path(pair.first);
       std::string segment;
       std::vector<std::string> segList;
 
@@ -79,28 +81,39 @@ void TemplateAnalyzer::init()
           [&](model::Microservice& service)
           {
             return service.type == model::Microservice::ServiceType::PRODUCT;
-          });
+          });*/
 
       auto currentService = std::find_if(_microserviceCache.begin(),
         _microserviceCache.end(),
         [&](model::Microservice& service)
         {
-          if (service.type == model::Microservice::ServiceType::PRODUCT)
-          {
-            if (pair.first.find("charts/") == std::string::npos)
-              return true;
-            else
-              return false;
-          }
-
-          for (auto it = segList.rbegin(); it != segList.rend(); ++it)
-            if (*it == service.name)
-              return true;
+          return pair.first.find(service.name) != std::string::npos;
         });
 
       if (currentService != _microserviceCache.end())
         visitKeyValuePairs(pair.first, pair.second, *currentService);
     });
+
+    for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
+      odb::query<model::Microservice>::type == model::Microservice::ServiceType::PRODUCT))
+    {
+      _microserviceCache.push_back(service);
+    }
+
+    std::for_each(_fileAstCache.begin(), _fileAstCache.end(),
+      [&, this](std::pair<std::string, YAML::Node> pair)
+      {
+        auto currentService = std::find_if(_microserviceCache.begin(),
+         _microserviceCache.end(),
+         [&](model::Microservice& service)
+         {
+            return service.type == model::Microservice::ServiceType::PRODUCT &&
+                   pair.first.find("/charts/") == std::string::npos;
+         });
+
+        if (currentService != _microserviceCache.end())
+          visitKeyValuePairs(pair.first, pair.second, *currentService);
+      });
   });
 }
 
@@ -193,8 +206,7 @@ void TemplateAnalyzer::processServiceDeps(
     externalService.type = model::Microservice::ServiceType::CENTRAL;
     externalService.file = filePtr->id;
     externalService.serviceId = createIdentifier(externalService);
-    externalService.version = YAML::Dump(currentFile_["metadata"]["labels"]["app.kubernetes.io\/version"]);
-    _ctx.db->persist(externalService);
+    externalService.version = YAML::Dump(currentFile_["metadata"]["labels"]["app.kubernetes.io\/version"]);_ctx.db->persist(externalService);
 
     helmTemplate.depends = externalService.serviceId;
   }

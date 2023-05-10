@@ -39,7 +39,9 @@ ValueAnalyzer::ValueAnalyzer(
   {
     util::OdbTransaction{_ctx.db}([this]
     {
-      for (const model::Microservice& service : _ctx.db->query<model::Microservice>())
+      for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
+        odb::query<model::Microservice>::type == model::Microservice::ServiceType::INTEGRATION ||
+        odb::query<model::Microservice>::type == model::Microservice::ServiceType::CENTRAL))
       {
         _microserviceCache.push_back(service);
       }
@@ -75,6 +77,27 @@ void ValueAnalyzer::init()
 
       if (currentService != _microserviceCache.end())
         visitKeyValuePairs(pair.second, *currentService, filePtr);
+    });
+
+    for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
+      odb::query<model::Microservice>::type == model::Microservice::ServiceType::PRODUCT))
+    {
+      _microserviceCache.push_back(service);
+    }
+
+    std::for_each(_fileAstCache.begin(), _fileAstCache.end(),
+      [&, this](std::pair<std::string, YAML::Node> pair)
+      {
+        auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == pair.first);
+        auto currentService = std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
+         [&](model::Microservice& service)
+         {
+           return service.type == model::Microservice::ServiceType::PRODUCT &&
+                  pair.first.find("/charts/") == std::string::npos;
+         });
+
+        if (currentService != _microserviceCache.end())
+          visitKeyValuePairs(pair.second, *currentService, filePtr);
     });
   });
 }

@@ -165,16 +165,33 @@ void YamlFileDiagram::getDependentServicesDiagram(
   const language::MicroserviceId& serviceId_)
 {
   util::Graph::Node currentNode;
+  model::Microservice::ServiceType nodeType;
 
   _transaction([&, this]{
     MicroserviceResult res = _db->query<model::Microservice>(
       MicroserviceQuery::serviceId == std::stoull(serviceId_));
 
     currentNode = addNode(graph_, *res.begin());
+    nodeType = res.begin()->type;
+
+    if (res.begin()->type == model::Microservice::ServiceType::PRODUCT)
+      decorateNode(graph_, currentNode, {{"shape", "folder"}, {"fillcolor", "crimson"}});
+    else if (res.begin()->type == model::Microservice::ServiceType::INTEGRATION)
+      decorateNode(graph_, currentNode, {{"shape", "component"}, {"fillcolor", "dodgerblue3"}});
+    else if (res.begin()->type == model::Microservice::ServiceType::CENTRAL)
+      decorateNode(graph_, currentNode, {{"shape", "component"}, {"fillcolor", "aquamarine2"}});
   });
 
-  std::vector<util::Graph::Node> serviceNodes = getDependencies(graph_, currentNode);
-  std::vector<util::Graph::Node> revServiceNodes = getRevDependencies(graph_, currentNode);
+  if (nodeType == model::Microservice::ServiceType::PRODUCT)
+  {
+    util::bfsBuild(graph_, currentNode, std::bind(&YamlFileDiagram::getDependencies,
+      this, std::placeholders::_1, std::placeholders::_2), {}, {});
+  }
+  else
+  {
+    std::vector<util::Graph::Node> serviceNodes = getDependencies(graph_, currentNode);
+    std::vector<util::Graph::Node> revServiceNodes = getRevDependencies(graph_, currentNode);
+  }
 }
 
 std::vector<util::Graph::Node> YamlFileDiagram::getDependencies(
@@ -215,10 +232,20 @@ std::vector<util::Graph::Node> YamlFileDiagram::getDependentServices(
         MicroserviceQuery::serviceId == serviceId.first);
 
       util::Graph::Node newNode = addNode(graph_, *res.begin());
+      if (res.begin()->type == model::Microservice::ServiceType::PRODUCT)
+        decorateNode(graph_, newNode, {{"shape", "folder"}, {"color", "crimson"}, {"fillcolor", "crimson"}});
+      else if (res.begin()->type == model::Microservice::ServiceType::INTEGRATION)
+        decorateNode(graph_, newNode, {{"shape", "component"}, {"color", "dodgerblue3"}, {"fillcolor", "dodgerblue3"}});
+      else if (res.begin()->type == model::Microservice::ServiceType::CENTRAL)
+        decorateNode(graph_, newNode, {{"shape", "component"}, {"color", "aquamarine2"}, {"fillcolor", "aquamarine2"}});
+
       dependencies.push_back(newNode);
       util::Graph::Edge edge;
       edge = reverse_ ? graph_.createEdge(newNode, node_) : graph_.createEdge(node_, newNode);
       decorateEdge(graph_, edge, {{"label", std::to_string(serviceId.second)}});
+
+      if (graph_.hasEdge(newNode, node_) && graph_.hasEdge(node_, newNode))
+        decorateEdge(graph_, edge, {{"color", "red"}});
     });
   }
 
@@ -551,7 +578,13 @@ util::Graph::Node YamlFileDiagram::addNode(
   util::Graph::Node node_ = graph_.getOrCreateNode(std::to_string(service_.serviceId));
   graph_.setNodeAttribute(node_, "label", service_.name + "\n" + service_.version);
 
-  decorateNode(graph_, node_, microserviceNodeDecoration);
+  //decorateNode(graph_, node_, microserviceNodeDecoration);
+  if (service_.type == model::Microservice::ServiceType::PRODUCT)
+    decorateNode(graph_, node_, {{"shape", "folder"}, {"style", "filled"}, {"fillcolor", "crimson"}, {"fontcolor", "white"}});
+  else if (service_.type == model::Microservice::ServiceType::INTEGRATION)
+    decorateNode(graph_, node_, {{"shape", "component"}, {"style", "filled"}, {"fillcolor", "dodgerblue"}, {"fontcolor", "white"}});
+  else if (service_.type == model::Microservice::ServiceType::CENTRAL)
+    decorateNode(graph_, node_, {{"shape", "component"}, {"style", "filled"}, {"fillcolor", "aquamarine2"}});
 
   return node_;
 }
@@ -565,6 +598,7 @@ util::Graph::Node YamlFileDiagram::addNode(
   graph_.setNodeAttribute(node_, "label", std::to_string(std::ceil(amount_ * 100.0) / 100.0));
 
   decorateNode(graph_, node_, sourceFileNodeDecoration);
+
 
   return node_;
 }
