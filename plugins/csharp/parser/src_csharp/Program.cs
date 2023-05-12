@@ -181,7 +181,6 @@ namespace CSharpParser
             return await ParingTask;
         }
 
-        //
 
         private static async Task<int> ParalellCollect(string csharpConnectionString, int threadNum,
             List<SyntaxTree> trees, CSharpCompilation compilation)

@@ -219,7 +219,7 @@ using TransportException = apache::thrift::transport::TTransportException;
 
 class CsharpServiceHandler : virtual public LanguageServiceIf
 {
-  friend class Diagram;
+  friend class CsharpDiagram;
 
 public:
   CsharpServiceHandler(
@@ -321,11 +321,6 @@ public:
   void getSyntaxHighlight(
     std::vector<SyntaxHighlight>& return_,
     const core::FileRange& range_) override;
-
-  // void getFileUsages(
-  //   std::map<std::string, std::vector<std::string>>& return_,
-  //   const core::FileId& fileId_,
-  //   const bool reverse_) override;
   
 
 private:
