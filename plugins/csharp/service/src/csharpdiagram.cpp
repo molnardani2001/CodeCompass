@@ -49,10 +49,23 @@ std::string graphHtmlTag(
 void removeAccessibilityTags(std::string& str){
   std::vector<std::string> accessibilityTags = 
     {"protected internal", "private protected", "public", "private", "protected", "internal"};
+
+  std::stringstream ss(str), result;
+  std::string line;
+
+  while(std::getline(ss, line)){
+
+    if (line.find('[') != 0) {
+      result << line << '\n';
+    }
+  }
+
+  str = result.str();
+  boost::trim(str);
   for (auto const& tag : accessibilityTags){
     if (str.find(tag) != std::string::npos)
     {
-      str.erase(str.find(tag),str.find(tag) + tag.length() + 1);
+      str.erase(str.find(tag), tag.length() + 1);
     }
   } 
 }
