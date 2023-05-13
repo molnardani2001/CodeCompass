@@ -52,8 +52,7 @@ void removeAccessibilityTags(std::string& str){
   for (auto const& tag : accessibilityTags){
     if (str.find(tag) != std::string::npos)
     {
-      str.erase(0,str.find(tag) + tag.length() + 1); 
-      break;
+      str.erase(str.find(tag),str.find(tag) + tag.length() + 1);
     }
   } 
 }
