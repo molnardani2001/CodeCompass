@@ -81,9 +81,8 @@ void CsharpServiceHandler::getAstNodeInfo(
       FileQuery::path == return_.range.file);
   });
   std::stringstream ss;
-  ss << file->id; // itt csak siman ss<<file volt;
+  ss << file->id; 
   return_.range.file = ss.str();
-  LOG(info) << "csharpQuery.getAstNodeInfo: file = " << return_.range.file;
 }
 
 void CsharpServiceHandler::getAstNodeInfoByPosition(
@@ -185,16 +184,10 @@ void CsharpServiceHandler::getDiagram(
       //Data members - property nodes
       std::vector<AstNodeInfo> propertyInfos;
       getReferences(propertyInfos, astNodeId_,(int)ReferenceType::DATA_MEMBER,{});
-      for (const auto& info : propertyInfos){
-        LOG(info) << "PropertyInfo: " << info.astNodeValue;
-      }
 
       // Method nodes
       std::vector<AstNodeInfo> methodInfos;
       getReferences(methodInfos,astNodeId_,(int)ReferenceType::METHOD,{});
-      for (const auto& info : methodInfos){
-        LOG(info) << "MethodInfo: " << info.astNodeValue;
-      }
 
       diagram.getDetailedClassDiagram(graph,centInfo,propertyInfos,methodInfos);
       break;
@@ -400,8 +393,6 @@ void CsharpServiceHandler::getReferences(
     return _db->query_one<model::File>(
     FileQuery::path == nodeinfo.range.file);
     });
-    LOG(info) << "getreferences: nodeInfo: " << nodeinfo.astNodeValue << " | " << nodeinfo.astNodeType;
-    LOG(info) << "getreferences: file: " << file->filename;
     
     std::stringstream ss;
     ss << file->id;

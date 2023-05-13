@@ -85,7 +85,6 @@ void CsharpDiagram::getFunctionCallDiagram(
   graph_.setAttribute("rankdir", "LR");
 
   // Center node
-  LOG(info) << "CENTER ASTNODE: " << centerNodeInfo_.astNodeValue;
   AstNodeInfo nodeInfo = centerNodeInfo_;
   removeAccessibilityTags(nodeInfo.astNodeValue);
   nodeInfo.astNodeValue = nodeInfo.astNodeValue.substr(0,nodeInfo.astNodeValue.find('{'));
@@ -255,7 +254,6 @@ util::Graph::Node CsharpDiagram::addNode(
   util::Graph& graph_,
   const AstNodeInfo& nodeInfo_)
 {
-  LOG(info) << "addNode: " << nodeInfo_.id << nodeInfo_.range.file;
   util::Graph::Node node
     = graph_.getOrCreateNode(nodeInfo_.id,
       addSubgraph(graph_, nodeInfo_.range.file));
