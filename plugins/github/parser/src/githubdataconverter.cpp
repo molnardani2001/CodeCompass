@@ -118,7 +118,7 @@ std::vector<model::Commit> GitHubDataConverter::ConvertCommits(pt::ptree& ptree)
 
 std::vector<model::CommitFile> GitHubDataConverter::ConvertCommitFiles(pt::ptree& ptree, model::Commit& commit)
 {
-  LOG(info) << "Processing files of commit(" << commit.sha << ").";
+  LOG(debug) << "Processing files of commit(" << commit.sha << ").";
   commit.additions = ptree.get_child("stats").get<unsigned>("additions");
   commit.deletions = ptree.get_child("stats").get<unsigned>("deletions");
   commit.changes = ptree.get_child("stats").get<unsigned>("total");
@@ -130,7 +130,6 @@ std::vector<model::CommitFile> GitHubDataConverter::ConvertCommitFiles(pt::ptree
 
     commitFile.sha = commitData.second.get<std::string>("sha");
     commitFile.path = commitData.second.get<std::string>("filename");
-    LOG(debug) << commitFile.path;
     commitFile.status = commitData.second.get<std::string>("status");
     commitFile.commitSha = commit.sha;
     commitFile.additions = commitData.second.get<unsigned>("additions");
@@ -318,7 +317,7 @@ std::vector<model::Pull> GitHubDataConverter::ConvertPulls(pt::ptree& ptree)
 
 std::vector<model::PullFile> GitHubDataConverter::ConvertPullFiles(pt::ptree& ptree, model::Pull& pull)
 {
-    LOG(info) << "Processing files for pull no." << pull.number << ".";
+    LOG(debug) << "Processing files for pull no." << pull.number << ".";
 
     std::vector<model::PullFile> pullFiles;
     for (pt::ptree::value_type &pullFileData : ptree)
@@ -327,7 +326,6 @@ std::vector<model::PullFile> GitHubDataConverter::ConvertPullFiles(pt::ptree& pt
 
       pullFile.sha = pullFileData.second.get<std::string>("sha");
       pullFile.path = pullFileData.second.get<std::string>("filename");
-      LOG(debug) << pullFile.path;
       pullFile.status = pullFileData.second.get<std::string>("status");
       pullFile.prNumber = pull.number;
       pullFile.additions = pullFileData.second.get<unsigned>("additions");
@@ -415,7 +413,7 @@ std::vector<model::Review> GitHubDataConverter::ConvertPullReviews(pt::ptree& pt
 
 std::vector<model::Comment> GitHubDataConverter::ConvertPullComments(pt::ptree& ptree, model::Pull& pull)
 {
-  LOG(debug) << "Processing review comments for pull no." << pull.number << ".";
+  LOG(debug) << "Processing comments for pull no." << pull.number << ".";
 
   std::vector<model::Comment> comments;
   for (pt::ptree::value_type &commentData : ptree)
@@ -424,6 +422,8 @@ std::vector<model::Comment> GitHubDataConverter::ConvertPullComments(pt::ptree& 
 
     comment.id = commentData.second.get<std::uint64_t>("id");
     comment.pullReviewId = commentData.second.get<std::uint64_t>("pull_request_review_id");
+    comment.commitId = commentData.second.get<std::string>("commit_id");
+    comment.originalCommitId = commentData.second.get<std::string>("original_commit_id");
     comment.diffHunk = commentData.second.get<std::string>("diff_hunk");
     comment.path = commentData.second.get<std::string>("path");
     comment.body = commentData.second.get<std::string>("body");

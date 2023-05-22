@@ -23,6 +23,12 @@ struct Comment
   #pragma db not_null
   std::uint64_t pullReviewId;
 
+  #pragma db not_null
+  std::string commitId;
+
+  #pragma db not_null
+  std::string originalCommitId;
+
   #pragma db null
   odb::lazy_shared_ptr<Person> user;
 

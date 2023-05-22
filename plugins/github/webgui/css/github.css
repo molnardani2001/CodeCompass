@@ -1,0 +1,94 @@
+/* Diff table. */
+
+.diff-containertable {
+    font-size: 10pt;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.diff-fileheader {
+    font-family: Consolas, courier, fixed;
+    white-space: pre-wrap;
+}
+
+.diff-linecontainer {
+    white-space: pre-wrap;
+}
+
+.diff-linenumber {
+    width: 40px;
+    color: #999999;
+    text-align: right;
+    padding-right: 10px;
+    vertical-align: top;
+    line-height: 1.4;
+}
+
+.diff-expander {
+    text-align: center;
+    font-weight: 600;
+    background-color: #edf2f9;
+}
+
+.diff-expander .dijitButtonNode {
+    border: 0px !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+.inline-btn.selected .dijitButtonNode,
+.side-by-side-btn.selected .dijitButtonNode {
+    background-color: #fff !important;
+}
+
+.diff-linenumber.old {
+    background-color: #ffdddd;
+    border-color: #f1c0c0;
+}
+
+.diff-linenumber.new {
+    background-color: #dbffdb;
+    border-color: #c1e9c1;
+}
+
+.diff-linecontainer > td {
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.diff-linetext {
+    font-family: Consolas, courier, fixed;
+    white-space: pre-wrap;
+    color: #333;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+
+.diff-linetext.old {
+    background-color: #ffecec;
+}
+
+.diff-linetext.new {
+    background-color: #eaffea;
+}
+
+.diff-linetext.both {
+    background-color: #ffffff;
+}
+
+.diff-linetext.remark {
+    background-color: #ffffff;
+    color: #bbbbbb;
+}
+
+.diff-rowheader {
+    color: #b1a7a7;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    background-color: #f4f7fb;
+    border-width: 1px 0;
+}
+
+.diff-linetext-sidebyside-side {
+    width: 50%;
+    word-break: break-all;
+}

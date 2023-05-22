@@ -1,6 +1,7 @@
 require([
     'dijit/Tooltip',
     'dijit/tree/ObjectStoreModel',
+    'dijit/_base/wai',
     'dojo/_base/declare',
     'dojo/store/Memory',
     'dojo/store/Observable',
@@ -8,13 +9,10 @@ require([
     'codecompass/view/component/HtmlTree',
     'codecompass/model',
     'codecompass/viewHandler'],
-function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
+function (Tooltip, ObjectStoreModel, wai, declare, Memory, Observable, topic,
     HtmlTree, model, viewHandler) {
 
     model.addService('githubservice', 'GitHubService', GitHubServiceClient);
-    console.log(model.githubservice);
-
-    console.log(model.githubservice.getGitHubString());
 
     var ProjectHostingServiceNavigator = declare(HtmlTree, {
         constructor : function () {
@@ -39,7 +37,7 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
 
             this._data.push({
                 id          : 'root',
-                name        : 'root?',
+                name        : 'GitHub Info',
                 hasChildren : true,
                 getChildren : function () {
                     return that._store.query({ parent : 'root' });
@@ -53,7 +51,6 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
                 id              : 'pulls',
                 name            : 'Pull Requests',
                 hasChildren     : true,
-                loaded          : true,
                 parent          : 'root',
                 getChildren     : function() {
                     return that.getPulls();
@@ -64,7 +61,6 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
                 id              : 'contributors',
                 name            : 'Contributors',
                 hasChildren     : true,
-                loaded          : true,
                 parent          : 'root',
                 getChildren     : function() {
                     return that.getContributors();
@@ -72,10 +68,11 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
             });
         },
 
+        setState : function (state) {},
+
         onClick : function (item, node, event) {
-            if (item.onClick)
+            if (item.onClick && !node.isExpanded)
             {
-                console.log("TESZT");
                 item.onClick(item, node, event);
             }
             if (item.hasChildren)
@@ -92,13 +89,12 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
                     id              : pull.number,
                     name            : '#' + pull.number + ': ' + pull.title,
                     hasChildren     : true,
-                    loaded          : true,
-                    parent          : 'pulls',
                     onClick         : function (item, node, event) {
-                        console.log("TESZT2");
-                        topic.publish('codecompass/githubPullView', {
-                            center  : 'githubpullview'
-                        })
+                        topic.publish('codecompass/gitHubPullView', {
+                            center  : 'githubpullview',
+                            pull    : pull.number,
+                            labels  : that.getLabelsForPull(pull)
+                        });
                     },
                     getChildren     : function() {
                         var subret = [];
@@ -107,17 +103,15 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
                             id            : pull.number + '_files',
                             name          : 'Files',
                             hasChildren   : true,
+                            onClick         : function (item, node, event) {
+                                topic.publish('codecompass/gitHubPullFileView', {
+                                    center      : 'githubpullfileview',
+                                    pull        : pull.number,
+                                    pullfiles   : model.githubservice.getFileListForPull(pull.number)
+                                });
+                            },
                             getChildren   : function() {
                                 return that.getFilesForPull(pull);
-                            }
-                        });
-
-                        subret.push({
-                            id            : pull.number + '_labels',
-                            name          : 'Labels',
-                            hasChildren   : true,
-                            getChildren   : function() {
-                                return that.getLabelsForPull(pull);
                             }
                         });
 
@@ -125,6 +119,12 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
                             id            : pull.number + '_reviewers',
                             name          : 'Reviewers',
                             hasChildren   : true,
+                            onClick         : function (item, node, event) {
+                                topic.publish('codecompass/gitHubPullReviewView', {
+                                    center  : 'githubpullreviewview',
+                                    pull    : pull.number
+                                });
+                            },
                             getChildren   : function() {
                                 return that.getReviewersForPull(pull);
                             }
@@ -132,7 +132,7 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
 
                         return subret;
                     }
-                })
+                });
             });
             return ret;
         },
@@ -143,7 +143,6 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
                 ret.push({
                     id      : file.sha,
                     name    : file.path
-                    // cssclass?
                 });
             });
             return ret;
@@ -164,8 +163,15 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
             var ret = [];
             model.githubservice.getReviewerListForPull(pull.number).forEach(function (user) {
                 ret.push({
-                    id      : user.username,
-                    name    : user.username
+                    id              : user.username + '_reviewer',
+                    name            : user.username,
+                    onClick         : function (item, node, event) {
+                        topic.publish('codecompass/gitHubReviewedView', {
+                            center  : 'githubreviewedview',
+                            user    : user.username,
+                            pulls   : model.githubservice.getPullListForReviewer(user.username)
+                        });
+                    },
                 });
             });
             return ret;
@@ -181,28 +187,40 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
                     id              : user.username,
                     name            : user.username,
                     hasChildren     : true,
-                    loaded          : true,
-                    parent          : 'contributors',
                     getChildren     : function() {
                         var subret = [];
 
                         subret.push({
-                            id            : user.username + '_pulls',
-                            name          : 'Author of',
-                            hasChildren   : true,
-                            getChildren   : function() {
+                            id              : user.username + '_authored_pulls',
+                            name            : 'Pull Requests',
+                            hasChildren     : true,
+                            onClick         : function (item, node, event) {
+                                topic.publish('codecompass/gitHubOwnedView', {
+                                    center  : 'githubownedview',
+                                    user    : user.username,
+                                    pulls   : model.githubservice.getPullListForAuthor(user.username)
+                                });
+                            },
+                            getChildren     : function() {
                                 return that.getPullsForAuthor(user);
                             }
                         });
 
-                        /*subret.push({
+                        subret.push({
                             id            : user.username + '_reviewed_pulls',
                             name          : 'Reviewed',
                             hasChildren   : true,
+                            onClick       : function (item, node, event) {
+                                topic.publish('codecompass/gitHubReviewedView', {
+                                    center  : 'githubreviewedview',
+                                    user    : user.username,
+                                    pulls   : model.githubservice.getPullListForReviewer(user.username)
+                                });
+                            },
                             getChildren   : function() {
                                 return that.getPullsForReviewer(user);
                             }
-                        });*/
+                        });
 
                         return subret;
                     }
@@ -212,11 +230,20 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
         },
 
         getPullsForAuthor : function (user) {
+            var that = this;
+
             var ret = [];
             model.githubservice.getPullListForAuthor(user.username).forEach(function (pull) {
                 ret.push({
-                    id              : pull.number,
+                    id              : pull.number + '_author',
                     name            : '#' + pull.number + ': ' + pull.title,
+                    onClick         : function (item, node, event) {
+                        topic.publish('codecompass/gitHubPullView', {
+                            center  : 'githubpullview',
+                            pull    : pull.number,
+                            labels  : that.getLabelsForPull(pull)
+                        });
+                    }
                 });
             });
             return ret;
@@ -226,8 +253,14 @@ function (Tooltip, ObjectStoreModel, declare, Memory, Observable, topic,
             var ret = [];
             model.githubservice.getPullListForReviewer(user.username).forEach(function (pull) {
                 ret.push({
-                    id              : pull.number,
+                    id              : pull.number + '_reviewer',
                     name            : '#' + pull.number + ': ' + pull.title,
+                    onClick         : function (item, node, event) {
+                        topic.publish('codecompass/gitHubPullReviewView', {
+                            center  : 'githubpullreviewview',
+                            pull    : pull.number
+                        });
+                    }
                 });
             });
             return ret;

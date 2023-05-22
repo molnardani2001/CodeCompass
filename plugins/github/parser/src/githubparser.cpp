@@ -173,7 +173,7 @@ void GitHubParser::runClient()
     int pageNum = 1;
     while(!lastPageReached)
     {
-      LOG(debug) << "Processing page " << pageNum << " of " << it << ".";
+      LOG(info) << "Processing page " << pageNum << " of " << it << ".";
       pt::ptree ptree;
 
       if (it == "issues" || it == "pulls" || it == "milestones")
@@ -361,7 +361,7 @@ bool GitHubParser::parse()
 
   _authString = "Basic " +  encode64("-u " + _ctx.options["github-user"].as<std::string>() +
            ":" +  _ctx.options["github-token"].as<std::string>());
-  LOG(debug) << _authString;
+  //LOG(debug) << _authString;
 
   runClient();
 

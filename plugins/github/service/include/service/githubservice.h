@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <set>
 
 #include <boost/program_options/variables_map.hpp>
 
@@ -35,29 +36,59 @@ public:
     std::shared_ptr<std::string> datadir_,
     const cc::webserver::ServerContext& context_);
 
+  void getPull(
+    Pull& return_,
+    const std::int64_t pullNum_) override;
   void getPullList(
     std::vector<Pull>& return_) override;
-  void getFileListForPull(
-    std::vector<PullFile>& return_,
-    std::int64_t pullNum) override;
-  void getLabelListForPull(
-    std::vector<Label>& return_,
-    std::int64_t pullNum) override;
-  void getReviewerListForPull(
-    std::vector<Person>& return_,
-    std::int64_t pullNum) override;
-
   void getContributorList(
     std::vector<Person>& return_) override;
+
+  void getFileListForPull(
+    std::vector<PullFile>& return_,
+    const std::int64_t pullNum_) override;
+  void getLabelListForPull(
+    std::vector<Label>& return_,
+    const std::int64_t pullNum_) override;
+  void getReviewerListForPull(
+    std::vector<Person>& return_,
+    const std::int64_t pullNum_) override;
+  /*
+  void getReviewListForPull(
+    std::vector<Review>& return_,
+    const std::int64_t pullNum_) override;
+    */
+
+  void getContributionsForPull(
+    std::vector<Contribution>& return_,
+    const std::int64_t pullNum_) override;
+  void getContributionsForPullByAuthor(
+    Contribution& return_,
+    const std::int64_t pullNum_,
+    const std::string& username_) override;
+
+  void getCommentsForPullFile(
+    std::vector<Comment>& return_,
+    const std::int64_t pullNum_,
+    const std::string& path_) override;
+  std::int64_t getCommentCountForPullFile(
+    const std::int64_t pullNum_,
+    const std::string& path_) override;
+  void getCommentsForPullFilePerDiffHunk (
+    std::vector<CommentsByDiffHunk>& return_,
+    const std::int64_t pullNum_,
+    const std::string& path_) override;
+  void getCommentCountForPullFilePerAuthor (
+    std::vector<CommentCountPerAuthor>& return_,
+    const std::int64_t pullNum_,
+    const std::string& path_) override;
+
   void getPullListForAuthor(
     std::vector<Pull>& return_,
-    const std::string& user) override;
+    const std::string& user_) override;
   void getPullListForReviewer(
     std::vector<Pull>& return_,
-    const std::string& user) override;
-
-  /*void getIssueList(
-    std::vector<Issue>& return_);*/
+    const std::string& user_) override;
 
   void getGitHubString(std::string& str_);
 
