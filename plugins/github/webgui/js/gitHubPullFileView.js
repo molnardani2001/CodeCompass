@@ -7,13 +7,14 @@ require([
     'dijit/TitlePane',
     'dijit/layout/ContentPane',
     'dijit/layout/TabContainer',
+    'dijit/layout/BorderContainer',
     'dijit/form/Button',
     'codecompass/model',
     'codecompass/viewHandler',
     'codecompass/urlHandler',
     'dojox/highlight',
     'dojox/highlight/languages/_all'],
-  function (declare, domClass, dom, topic, style, TitlePane, ContentPane, TabContainer, Button,
+  function (declare, domClass, dom, topic, style, TitlePane, ContentPane, TabContainer, BorderContainer, Button,
             model, viewHandler, urlHandler, highlight) {
 
     model.addService('githubservice', 'GitHubService', GitHubServiceClient);
@@ -69,8 +70,8 @@ require([
           }, header)
       },
 
-      createDiffTable : function (pullfiles) {
-        this._pullfiles = pullfiles;
+      createDiffTable : function (pullFiles) {
+        this._pullFiles = pullFiles;
 
         dom.empty(this._diff.domNode);
         let that = this;
@@ -78,64 +79,61 @@ require([
         that._diff._header = new ContentPane();
         that._diff.addChild(that._diff._header);
 
-        that.loadDiffTable(that._pullfiles);
+        that.loadDiffTable(that._pullFiles);
       },
 
-      loadDiffTable : function (pullfiles) {
+      loadDiffTable : function (pullFiles) {
         this._files = {};
 
         let that = this;
         dom.empty(that._diff._header.domNode);
 
-        pullfiles.forEach( function (pullfile) {
-          let commentCount = model.githubservice.getCommentCountForPullFile(that._pullId, pullfile.path);
+        pullFiles.forEach( function (pullFile) {
+          let commentCount = model.githubservice.getCommentCountForPullFile(that._pullId, pullFile.path);
 
-          that._files[pullfile.path] = new TitlePane({
-            title        : pullfile.path + ((commentCount != 0) ? (' (comments: ' + commentCount + ')') : ''),
+          that._files[pullFile.path] = new TitlePane({
+            title        : pullFile.path + ((commentCount != 0) ? (' (comments: ' + commentCount + ')') : ''),
             open         : false,
-            content      : new ContentPane()
+            content      : new BorderContainer()
           });
 
-          that._header.addChild(that._files[pullfile.path]);
+          that._header.addChild(that._files[pullFile.path]);
 
-          let changes = that.parseSingleDiffFile(pullfile);
+          let changes = that.parseSingleDiffFile(pullFile);
           if (changes != null)
           {
-            console.log('Step 3/3 - ' + pullfile.path + ' - adding diff title pane as child');
-            that._files[pullfile.path].content.addChild(changes);
+            that._files[pullFile.path].content.addChild(changes);
+
+            let comments = that.getCommentsForPullFile(pullFile);
+            if (comments != null)
+            {
+              that._files[pullFile.path].content.addChild(comments);
+            }
           }
           else {
             dom.create('div', {
-              style : 'font-size: 1em;',
-              innerHTML: 'Diff not supported for this many changes'
-            }, that._files[pullfile.path].content.domNode);
-          }
-
-          let comments = that.getCommentsForPullFile(pullfile);
-          if (comments != null)
-          {
-            console.log('Step 2/2 - ' + pullfile.path + ' - adding comments title pane as child');
-            that._files[pullfile.path].content.addChild(comments);
+              style: 'font-size: 1em;',
+              innerHTML: 'Diff not supported'
+            }, that._files[pullFile.path].content.domNode);
           }
         })
       },
 
-      getCommentsForPullFile : function (pullfile)  {
+      getCommentsForPullFile : function (pullFile)  {
         let that = this;
 
-        let commentCount = model.githubservice.getCommentCountForPullFile(that._pullId, pullfile.path);
+        let commentCount = model.githubservice.getCommentCountForPullFile(that._pullId, pullFile.path);
         if (0 == commentCount) return;
 
-        let commentsInfo = model.githubservice.getCommentsForPullFilePerDiffHunk(that._pullId, pullfile.path);
+        let commentsInfo = model.githubservice.getCommentsForPullFilePerDiffHunk(that._pullId, pullFile.path);
         let comments = dom.create('table', {
           style : 'padding: 20px;' +
             'border-radius: 3px;' +
             'border-collapse: collapse;' +
             'width: 100%;'
         });
-        console.log('Step 1/2 - ' + pullfile.path + ' - creating comments title pane');
         let ret = new TitlePane({
-          title        : 'Comments for: ' + pullfile.path,
+          title        : 'Comments for: ' + pullFile.path,
           open         : false,
           content      : comments
         });
@@ -183,30 +181,28 @@ require([
         return ret;
       },
 
-      parseSingleDiffFile : function (pullfile) {
+      parseSingleDiffFile : function (pullFile) {
         let that = this;
-        if (!pullfile.patch)
+        if (!pullFile.patch)
         {
           return;
         }
 
-        var lines = pullfile.patch.split(/\r?\n/);
+        var lines = pullFile.patch.split(/\r?\n/);
 
         var fileDiffDom = dom.create('table', {
           style : 'font-size: 10pt;' +
             'border-collapse: collapse;' +
             'width: 100%;'
         });
-        console.log('Step 1/3 - ' + pullfile.path + ' - creating diff title pane');
         let ret = new TitlePane({
-          title        : 'Current changes for: ' + pullfile.path,
+          title        : 'Current changes for: ' + pullFile.path,
           open         : false,
           content      : fileDiffDom
         });
 
         for (let i = 0; i < lines.length; ++i) {
           var line = lines[i];
-          console.log(line);
           if ('@' === line[0]) {
             //diffHunk
             var lineContainer = dom.create('tr', {
@@ -223,10 +219,8 @@ require([
             var res = line.match(/[0-9]+/g);
             i = this.parseSingleDiffSection(lines, i + 1, fileDiffDom,
               parseInt(res[0]), parseInt(res[2])) - 1;
-            console.log('Step 1.5/3 - ' + pullfile.path + ' - parsed diffHunk');
           }
         }
-        console.log('Step 2/3 - ' + pullfile.path + ' - parsed all diffHunks');
         return ret;
       },
 
@@ -305,9 +299,9 @@ require([
         return i;
       },
 
-      init : function (pull, pullfiles) {
-        this.createHeader(pull);
-        this.createDiffTable(pullfiles);
+      init : function (pullId, pullFiles) {
+        this.createHeader(pullId);
+        this.createDiffTable(pullFiles);
       },
     });
 
@@ -324,20 +318,20 @@ require([
         this.addChild(this._info);
       },
 
-      loadPullFileView : function (pull, pullfiles) {
-        this._info.init(pull, pullfiles);
+      loadPullFileView : function (pull, pullFiles) {
+        this._info.init(pull, pullFiles);
       },
 
       setState : function (state) {
         if (state.center !== this.id || !state.pull)
           return;
-        this.loadPullFileView(state.pull, state.pullfiles);
+        this.loadPullFileView(state.pull, state.pullFiles);
       },
 
       _subscribeTopics : function () {
         var that = this;
         topic.subscribe('codecompass/gitHubPullFileView', function (message) {
-          that.loadPullFileView(message.pull, message.pullfiles);
+          that.loadPullFileView(message.pull, message.pullFiles);
           topic.publish('codecompass/setCenterModule', that.id);
           urlHandler.setStateValue({
             center    : that.id,

@@ -152,31 +152,6 @@ void GitHubServiceHandler::getReviewerListForPull(
   });
 }
 
-/*
-void GitHubServiceHandler::getReviewListForPull(
-  std::vector<Review>& return_,
-  const std::int64_t pullNum_)
-{
-  _transaction([&, this]() {
-    std::shared_ptr<model::Pull> pull =  (_db->query_one<model::Pull>(
-      odb::query<model::Pull>::number == pullNum_));
-    for(auto iter = pull->reviews.begin(); iter != pull->reviews.end(); ++iter)
-    {
-      iter->load();
-      iter->get()->user.load();
-      Review r;
-      r.id = iter->get()->id;
-      r.user = iter->get()->user->username;
-      r.state = iter->get()->state;
-      r.body = iter->get()->body;
-      r.url = iter->get()->url;
-      r.submittedAt = iter->get()->submittedAt;
-      return_.emplace_back(r);
-    }
-  });
-}
- */
-
 void GitHubServiceHandler::getContributionsForPull(
   std::vector<Contribution> &return_,
   const std::int64_t pullNum_)

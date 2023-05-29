@@ -103,7 +103,6 @@ service GitHubService
   list<PullFile> getFileListForPull(1:i64 pullNum)
   list<Person> getReviewerListForPull(1:i64 pullNum)
   list<Label> getLabelListForPull(1:i64 pullNum)
-  #list<Review> getReviewListForPull(1:i64 pullNum)
 
   list<Contribution> getContributionsForPull(1:i64 pullNum)
   Contribution getContributionsForPullByAuthor(1:i64 pullNum, 2:string username)

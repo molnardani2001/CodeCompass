@@ -7,18 +7,18 @@
 #include <boost/property_tree/ptree.hpp>
 #include <odb/database.hxx>
 
-#include <parser/parsercontext.h>
+#include "parser/parsercontext.h"
 
-#include <model/label.h>
-#include <model/milestone.h>
-#include <model/person.h>
-#include <model/commit.h>
-#include <model/commitfile.h>
-#include <model/issue.h>
-#include <model/pull.h>
-#include <model/review.h>
-#include <model/comment.h>
-#include <model/pullfile.h>
+#include "model/label.h"
+#include "model/milestone.h"
+#include "model/person.h"
+#include "model/commit.h"
+#include "model/commitfile.h"
+#include "model/issue.h"
+#include "model/pull.h"
+#include "model/review.h"
+#include "model/comment.h"
+#include "model/pullfile.h"
 
 namespace cc
 {

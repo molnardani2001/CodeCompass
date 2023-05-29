@@ -19,6 +19,8 @@
 #include <certify/extensions.hpp>
 #include <certify/https_verification.hpp>
 
+#include "githubdataconverter.h"
+
 namespace cc
 {
 namespace parser
@@ -41,16 +43,18 @@ public:
   GitHubParser(ParserContext& ctx_);
   virtual ~GitHubParser();
   bool parse() override;
-private:
-  static const std::list<std::string> uriList;
 
+private:
+  GitHubDataConverter _converter = GitHubDataConverter(_ctx);
+  static const std::list<std::string> uriList;
   std::string _owner;
   std::string _repoName;
   std::string _authString;
 
-  bool accept(const std::string& path_);
-
-  std::string encode64(const std::string& string);
+  bool accept(
+    const std::string& path_);
+  std::string encode64(
+    const std::string& string);
 
   ResType resolve(
     asio::io_context& ctx,
@@ -67,18 +71,47 @@ private:
     boost::string_view hostname,
     boost::string_view uri);
 
-  void processUrl(std::string url_);
-  std::string createUri(std::string const& ending_);
+  void processUrl(
+    std::string url_);
+  std::string createUri(
+    std::string const& ending_);
   pt::ptree createPTree(
     asio::io_context& ctx,
     ssl::context& ssl_ctx,
     std::string const& hostname,
     std::string const& uri);
-  void processNewUsers(pt::ptree& ptree,
-                       asio::io_context& ctx,
-                       ssl::context& ssl_ctx,
-                       const std::string& hostname);
-  void runClient();
+  void processLabels(
+    pt::ptree& ptree);
+  void processMilestones(
+    pt::ptree& ptree);
+  void processContributors(
+    pt::ptree& ptree,
+    asio::io_context& ctx,
+    ssl::context& ssl_ctx,
+    const std::string& hostname);
+  void processCommits(
+    pt::ptree& ptree,
+    asio::io_context& ctx,
+    ssl::context& ssl_ctx,
+    const std::string& hostname,
+    const std::string& uri);
+  void processIssues(
+    pt::ptree& ptree,
+    asio::io_context& ctx,
+    ssl::context& ssl_ctx,
+    const std::string& hostname);
+  void processPulls(
+    pt::ptree& ptree,
+    asio::io_context& ctx,
+    ssl::context& ssl_ctx,
+    const std::string& hostname,
+    const std::string& uri);
+  void processNewUsers(
+    pt::ptree& ptree,
+    asio::io_context& ctx,
+    ssl::context& ssl_ctx,
+    const std::string& hostname);
+  void runGitHubParser();
 
 };
   

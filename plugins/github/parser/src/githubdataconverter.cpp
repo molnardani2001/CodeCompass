@@ -1,4 +1,4 @@
-#include "githubdataconverter.h"
+#include "githubparser/githubdataconverter.h"
 
 #include <utility>
 #include <util/logutil.h>

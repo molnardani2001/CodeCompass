@@ -200,5 +200,4 @@ function (declare, dom, topic, style, ContentPane, TabContainer,
     viewHandler.registerModule(pullView, {
         type : viewHandler.moduleType.Center
     });
-
 });

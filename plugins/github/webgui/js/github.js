@@ -68,8 +68,6 @@ function (Tooltip, ObjectStoreModel, wai, declare, Memory, Observable, topic,
             });
         },
 
-        setState : function (state) {},
-
         onClick : function (item, node, event) {
             if (item.onClick && !node.isExpanded)
             {
@@ -107,7 +105,7 @@ function (Tooltip, ObjectStoreModel, wai, declare, Memory, Observable, topic,
                                 topic.publish('codecompass/gitHubPullFileView', {
                                     center      : 'githubpullfileview',
                                     pull        : pull.number,
-                                    pullfiles   : model.githubservice.getFileListForPull(pull.number)
+                                    pullFiles   : model.githubservice.getFileListForPull(pull.number)
                                 });
                             },
                             getChildren   : function() {

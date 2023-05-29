@@ -53,11 +53,6 @@ public:
   void getReviewerListForPull(
     std::vector<Person>& return_,
     const std::int64_t pullNum_) override;
-  /*
-  void getReviewListForPull(
-    std::vector<Review>& return_,
-    const std::int64_t pullNum_) override;
-    */
 
   void getContributionsForPull(
     std::vector<Contribution>& return_,

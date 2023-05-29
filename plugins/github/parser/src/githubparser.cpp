@@ -5,8 +5,6 @@
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
 
-#include "githubdataconverter.h"
-
 #include <model/label.h>
 #include <model/label-odb.hxx>
 #include <model/milestone.h>
@@ -41,7 +39,8 @@ namespace parser
 const std::list<std::string> GitHubParser::uriList ({"labels", "milestones", "contributors",
                                                      "commits", "issues", "pulls"});
 
-std::string GitHubParser::encode64(const std::string &val) {
+std::string GitHubParser::encode64(
+  const std::string &val) {
   using namespace boost::archive::iterators;
   using It = base64_from_binary<transform_width<std::string::const_iterator, 6, 8>>;
   auto tmp = std::string(It(std::begin(val)), It(std::end(val)));
@@ -71,10 +70,8 @@ std::unique_ptr<SSLStream> GitHubParser::connect(
   std::string const& hostname)
 {
   auto stream = boost::make_unique<ssl::stream<tcp::socket>>(connect(ctx, hostname), ssl_ctx);
-  // tag::stream_setup_source[]
   boost::certify::set_server_hostname(*stream, hostname);
   boost::certify::sni_hostname(*stream, hostname);
-  // end::stream_setup_source[]
 
   stream->handshake(ssl::stream_base::handshake_type::client);
   return stream;
@@ -101,7 +98,8 @@ HTTPResponse GitHubParser::get(
   return response;
 }
 
-void GitHubParser::processUrl(std::string url_)
+void GitHubParser::processUrl(
+  std::string url_)
 {
   url_.erase(0, url_.find("github"));
   url_.erase(0, url_.find('/') + 1);
@@ -110,7 +108,8 @@ void GitHubParser::processUrl(std::string url_)
   _repoName = url_.substr(0, url_.find('/'));
 }
 
-std::string GitHubParser::createUri(std::string const& ending_)
+std::string GitHubParser::createUri(
+  std::string const& ending_)
 {
   return "/repos/" + _owner + "/" + _repoName + "/" + ending_;
 }
@@ -136,27 +135,191 @@ pt::ptree GitHubParser::createPTree(
   return ptree;
 }
 
+void GitHubParser::processLabels(
+  pt::ptree& ptree)
+{
+  util::OdbTransaction trans(_ctx.db);
+  std::vector<model::Label> labels = _converter.ConvertLabels(ptree);
+  for (auto label : labels)
+  {
+    trans([&, this]{
+      _ctx.db->persist(label);
+    });
+  }
+}
+
+void GitHubParser::processMilestones(
+  pt::ptree& ptree)
+{
+  util::OdbTransaction trans(_ctx.db);
+  std::vector<model::Milestone> milestones = _converter.ConvertMilestones(ptree);
+  for (auto milestone : milestones)
+  {
+    trans([&, this]{
+      _ctx.db->persist(milestone);
+    });
+  }
+}
+
+void GitHubParser::processContributors(
+  pt::ptree& ptree,
+  asio::io_context& ctx,
+  ssl::context& ssl_ctx,
+  const std::string& hostname)
+{
+  util::OdbTransaction trans(_ctx.db);
+  for (auto pair : _converter.ConvertContributors(ptree))
+  {
+    pt::ptree userPtree = createPTree(ctx, ssl_ctx, hostname, "/users/" + pair.first);
+    trans([&, this]{
+      _ctx.db->persist(_converter.ConvertUser(userPtree, pair.second));
+    });
+  }
+}
+
+void GitHubParser::processCommits(
+  pt::ptree& ptree,
+  asio::io_context& ctx,
+  ssl::context& ssl_ctx,
+  const std::string& hostname,
+  const std::string& uri)
+{
+  util::OdbTransaction trans(_ctx.db);
+  std::vector<model::Commit> commits = _converter.ConvertCommits(ptree);
+  for (auto commit : commits)
+  {
+    pt::ptree commitPtree = createPTree(ctx, ssl_ctx, hostname, createUri(uri + "/" + commit.sha));
+    std::vector<model::CommitFile> commitFiles = _converter.ConvertCommitFiles(commitPtree, commit);
+    for (auto commitFile : commitFiles)
+    {
+      trans([&, this]{
+        _ctx.db->persist(commitFile);
+        commit.commitFiles.emplace_back(std::make_shared<model::CommitFile>(commitFile));
+      });
+    }
+    trans([&, this]{
+      _ctx.db->persist(commit);
+    });
+  }
+}
+
+void GitHubParser::processIssues(
+  pt::ptree& ptree,
+  asio::io_context& ctx,
+  ssl::context& ssl_ctx,
+  const std::string& hostname)
+{
+  processNewUsers(ptree, ctx, ssl_ctx, hostname);
+
+  util::OdbTransaction trans(_ctx.db);
+  std::vector<model::Issue> issues = _converter.ConvertIssues(ptree);
+  for (auto issue : issues)
+  {
+    trans([&, this]{
+      _ctx.db->persist(issue);
+    });
+  }
+}
+
+void GitHubParser::processPulls(
+  pt::ptree& ptree,
+  asio::io_context& ctx,
+  ssl::context& ssl_ctx,
+  const std::string& hostname,
+  const std::string& uri)
+{
+  util::OdbTransaction trans(_ctx.db);
+  processNewUsers(ptree, ctx, ssl_ctx, hostname);
+
+  std::vector<model::Pull> pulls = _converter.ConvertPulls(ptree);
+  for (auto pull : pulls)
+  {
+    int tempPageNum = 1;
+    pt::ptree pullFilePtree = createPTree(ctx, ssl_ctx, hostname, createUri(
+      uri + "/" + std::to_string(pull.number) + "/files?per_page=100&page=" + std::to_string(tempPageNum)));
+    while(!pullFilePtree.empty())
+    {
+      std::vector<model::PullFile> pullFiles = _converter.ConvertPullFiles(pullFilePtree, pull);
+      for (auto pullFile: pullFiles)
+      {
+        trans([&, this]
+              {
+                _ctx.db->persist(pullFile);
+                pull.pullFiles.emplace_back(std::make_shared<model::PullFile>(pullFile));
+              });
+      }
+
+      tempPageNum++;
+      pullFilePtree = createPTree(ctx, ssl_ctx, hostname, createUri(
+        uri + "/" + std::to_string(pull.number) + "/files?per_page=100&page=" + std::to_string(tempPageNum)));
+    }
+
+    tempPageNum = 1;
+    pt::ptree reviewPtree = createPTree(ctx, ssl_ctx, hostname, createUri(
+      uri + "/" + std::to_string(pull.number) + "/reviews?per_page=100&page=" + std::to_string(tempPageNum)));
+    while(!reviewPtree.empty())
+    {
+      processNewUsers(reviewPtree, ctx, ssl_ctx, hostname);
+
+      std::vector<model::Review> reviews = _converter.ConvertPullReviews(reviewPtree, pull);
+      for (const auto& review : reviews)
+      {
+        trans([&, this]{
+          _ctx.db->persist(review);
+        });
+      }
+
+      tempPageNum++;
+      reviewPtree = createPTree(ctx, ssl_ctx, hostname, createUri(
+        uri + "/" + std::to_string(pull.number) + "/reviews?per_page=100&page=" + std::to_string(tempPageNum)));
+    }
+
+    tempPageNum = 1;
+    pt::ptree commentPtree = createPTree(ctx, ssl_ctx, hostname, createUri(
+      uri + "/" + std::to_string(pull.number) + "/comments?per_page=100&page=" + std::to_string(tempPageNum)));
+    while(!commentPtree.empty())
+    {
+      processNewUsers(commentPtree, ctx, ssl_ctx, hostname);
+
+      std::vector<model::Comment> comments = _converter.ConvertPullComments(commentPtree, pull);
+      for (auto comment : comments)
+      {
+        trans([&, this]{
+          _ctx.db->persist(comment);
+        });
+      }
+
+      tempPageNum++;
+      commentPtree = createPTree(ctx, ssl_ctx, hostname, createUri(
+        uri + "/" + std::to_string(pull.number) + "/comments?per_page=100&page=" + std::to_string(tempPageNum)));
+    }
+
+    pt::ptree pullPtree = createPTree(ctx, ssl_ctx, hostname, createUri(uri + "/" + std::to_string(pull.number)));
+    trans([&, this]{
+      _ctx.db->persist(_converter.ConvertPull(pullPtree, pull));
+    });
+  }
+}
+
 void GitHubParser::processNewUsers(
   pt::ptree& ptree,
   asio::io_context& ctx,
   ssl::context& ssl_ctx,
   const std::string& hostname)
 {
-  GitHubDataConverter converter(_ctx);
-  std::set<std::string> newUsers = converter.GetNewUsers(ptree);
+  std::set<std::string> newUsers = _converter.GetNewUsers(ptree);
   for (auto user : newUsers)
   {
     pt::ptree userPtree= createPTree(ctx, ssl_ctx, hostname, "/users/" + user);
     util::OdbTransaction trans(_ctx.db);
     trans([&, this]{
-      _ctx.db->persist(converter.ConvertUser(userPtree, 0));
+      _ctx.db->persist(_converter.ConvertUser(userPtree, 0));
     });
   }
 }
 
-void GitHubParser::runClient()
+void GitHubParser::runGitHubParser()
 {
-  GitHubDataConverter converter(_ctx);
   util::OdbTransaction trans(_ctx.db);
 
   asio::io_context ctx;
@@ -190,137 +353,27 @@ void GitHubParser::runClient()
 
       if (it == "labels")
       {
-        std::vector<model::Label> labels = converter.ConvertLabels(ptree);
-        for (auto label : labels)
-        {
-          trans([&, this]{
-            _ctx.db->persist(label);
-          });
-        }
+        processLabels(ptree);
       }
       else if (it == "milestones")
       {
-        std::vector<model::Milestone> milestones = converter.ConvertMilestones(ptree);
-        for (auto milestone : milestones)
-        {
-          trans([&, this]{
-            _ctx.db->persist(milestone);
-          });
-        }
+        processMilestones(ptree);
       }
       else if (it == "contributors")
       {
-        for (auto pair : converter.ConvertContributors(ptree))
-        {
-          pt::ptree userPtree = createPTree(ctx, ssl_ctx, hostname, "/users/" + pair.first);
-          trans([&, this]{
-              _ctx.db->persist(converter.ConvertUser(userPtree, pair.second));
-            });
-        }
+        processContributors(ptree, ctx, ssl_ctx, hostname);
       }
       else if (it == "commits")
       {
-        std::vector<model::Commit> commits = converter.ConvertCommits(ptree);
-        for (auto commit : commits)
-        {
-          pt::ptree commitPtree = createPTree(ctx, ssl_ctx, hostname, createUri(it + "/" + commit.sha));
-          std::vector<model::CommitFile> commitFiles = converter.ConvertCommitFiles(commitPtree, commit);
-          for (auto commitFile : commitFiles)
-          {
-            trans([&, this]{
-              _ctx.db->persist(commitFile);
-              commit.commitFiles.emplace_back(std::make_shared<model::CommitFile>(commitFile));
-            });
-          }
-          trans([&, this]{
-            _ctx.db->persist(commit);
-          });
-        }
+        processCommits(ptree, ctx, ssl_ctx, hostname, it);
       }
       else if (it == "issues")
       {
-        processNewUsers(ptree, ctx, ssl_ctx, hostname);
-
-        std::vector<model::Issue> issues = converter.ConvertIssues(ptree);
-        for (auto issue : issues)
-        {
-          trans([&, this]{
-            _ctx.db->persist(issue);
-          });
-        }
+        processIssues(ptree, ctx, ssl_ctx, hostname);
       }
       else if (it == "pulls")
       {
-        processNewUsers(ptree, ctx, ssl_ctx, hostname);
-
-        std::vector<model::Pull> pulls = converter.ConvertPulls(ptree);
-        for (auto pull : pulls)
-        {
-          int tempPageNum = 1;
-          pt::ptree pullFilePtree = createPTree(ctx, ssl_ctx, hostname, createUri(
-            it + "/" + std::to_string(pull.number) + "/files?per_page=100&page=" + std::to_string(tempPageNum)));
-          while(!pullFilePtree.empty())
-          {
-            std::vector<model::PullFile> pullFiles = converter.ConvertPullFiles(pullFilePtree, pull);
-            for (auto pullFile: pullFiles)
-            {
-              trans([&, this]
-                    {
-                      _ctx.db->persist(pullFile);
-                      pull.pullFiles.emplace_back(std::make_shared<model::PullFile>(pullFile));
-                    });
-            }
-
-            tempPageNum++;
-            pullFilePtree = createPTree(ctx, ssl_ctx, hostname, createUri(
-              it + "/" + std::to_string(pull.number) + "/files?per_page=100&page=" + std::to_string(tempPageNum)));
-          }
-
-          tempPageNum = 1;
-          pt::ptree reviewPtree = createPTree(ctx, ssl_ctx, hostname, createUri(
-            it + "/" + std::to_string(pull.number) + "/reviews?per_page=100&page=" + std::to_string(tempPageNum)));
-          while(!reviewPtree.empty())
-          {
-            processNewUsers(reviewPtree, ctx, ssl_ctx, hostname);
-
-            std::vector<model::Review> reviews = converter.ConvertPullReviews(reviewPtree, pull);
-            for (const auto& review : reviews)
-            {
-              trans([&, this]{
-                _ctx.db->persist(review);
-              });
-            }
-
-            tempPageNum++;
-            reviewPtree = createPTree(ctx, ssl_ctx, hostname, createUri(
-              it + "/" + std::to_string(pull.number) + "/reviews?per_page=100&page=" + std::to_string(tempPageNum)));
-          }
-
-          tempPageNum = 1;
-          pt::ptree commentPtree = createPTree(ctx, ssl_ctx, hostname, createUri(
-            it + "/" + std::to_string(pull.number) + "/comments?per_page=100&page=" + std::to_string(tempPageNum)));
-          while(!commentPtree.empty())
-          {
-            processNewUsers(commentPtree, ctx, ssl_ctx, hostname);
-
-            std::vector<model::Comment> comments = converter.ConvertPullComments(commentPtree, pull);
-            for (auto comment : comments)
-            {
-              trans([&, this]{
-                _ctx.db->persist(comment);
-              });
-            }
-
-            tempPageNum++;
-            commentPtree = createPTree(ctx, ssl_ctx, hostname, createUri(
-              it + "/" + std::to_string(pull.number) + "/comments?per_page=100&page=" + std::to_string(tempPageNum)));
-          }
-
-          pt::ptree pullPtree = createPTree(ctx, ssl_ctx, hostname, createUri(it + "/" + std::to_string(pull.number)));
-          trans([&, this]{
-            _ctx.db->persist(converter.ConvertPull(pullPtree, pull));
-          });
-        }
+        processPulls(ptree, ctx, ssl_ctx, hostname, it);
       }
       else
       {
@@ -332,11 +385,12 @@ void GitHubParser::runClient()
 
 }
 
-GitHubParser::GitHubParser(ParserContext& ctx_): AbstractParser(ctx_)
-{
-}
+GitHubParser::GitHubParser(
+  ParserContext& ctx_): AbstractParser(ctx_)
+{}
 
-bool GitHubParser::accept(const std::string& path_)
+bool GitHubParser::accept(
+  const std::string& path_)
 {
   std::string ext = boost::filesystem::extension(path_);
   return ext == ".github";
@@ -363,12 +417,12 @@ bool GitHubParser::parse()
            ":" +  _ctx.options["github-token"].as<std::string>());
   //LOG(debug) << _authString;
 
-  runClient();
+  runGitHubParser();
 
   return true;
 }
 
-  GitHubParser::~GitHubParser()
+GitHubParser::~GitHubParser()
 {
 }
 

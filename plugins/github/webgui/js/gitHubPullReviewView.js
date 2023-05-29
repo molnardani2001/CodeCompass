@@ -104,31 +104,28 @@ function (declare, dom, topic, style, ContentPane, TabContainer,
             }, header);
           model.githubservice.getFileListForPull(pull.number).forEach(function (file) {
             let commentsInfo = model.githubservice.getCommentCountForPullFilePerAuthor(pull.number, file.path);
-            if (true)//commentsInfo.length != 0) //change this if hiding the files without comments is desired
-            {
-              //comments
-              let comments = dom.create('div',
-                {
-                  style: 'background: #6a737d;' +
-                    'border: 1px solid #c5d5dd;' +
-                    'color: white;' +
-                    'padding: 5px;' +
-                    'border-radius: 3px;'
-                }, header);
+            //comments
+            let comments = dom.create('div',
+              {
+                style: 'background: #6a737d;' +
+                  'border: 1px solid #c5d5dd;' +
+                  'color: white;' +
+                  'padding: 5px;' +
+                  'border-radius: 3px;'
+              }, header);
+            dom.create('div',
+              {
+                style: 'font-size: 1.3em;' +
+                  'font-weight: 600;',
+                innerHTML: file.path
+              }, comments);
+            commentsInfo.forEach(function (commentInfo) {
               dom.create('div',
                 {
-                  style: 'font-size: 1.3em;' +
-                    'font-weight: 600;',
-                  innerHTML: file.path
+                  innerHTML: commentInfo.key + ' made ' + commentInfo.value + ' comment' +
+                    ((1 == commentInfo.value) ? '' : 's')
                 }, comments);
-              commentsInfo.forEach(function (commentInfo) {
-                dom.create('div',
-                  {
-                    innerHTML: commentInfo.key + ' made ' + commentInfo.value + ' comment' +
-                      ((1 == commentInfo.value) ? '' : 's')
-                  }, comments);
-              });
-            }
+            });
           });
         },
 
