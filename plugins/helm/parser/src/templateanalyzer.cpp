@@ -43,6 +43,9 @@ TemplateAnalyzer::TemplateAnalyzer(
         _microserviceCache.push_back(service);
       }
     });
+
+    for (auto it = _microserviceCache.begin(); it != _microserviceCache.end(); ++it)
+      LOG(info) << it->serviceId << ", " << it->name;
   }
 
   templateCounter = 0;
@@ -52,7 +55,10 @@ TemplateAnalyzer::~TemplateAnalyzer()
 {
   (util::OdbTransaction(_ctx.db))([this]{
     for (model::HelmTemplate& helmTemplate : _newTemplates)
+    {
+      LOG(warning) << helmTemplate.id;
       _ctx.db->persist(helmTemplate);
+    }
 
     for (model::MSResource& msResource : _msResources)
       _ctx.db->persist(msResource);
@@ -183,6 +189,7 @@ void TemplateAnalyzer::processServiceDeps(
   auto serviceIter = std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
     [&](const model::Microservice& service)
     {
+      //LOG(info) << service.name << ", " << YAML::Dump(currentFile_["metadata"]["name"]);;
       return service.name == YAML::Dump(currentFile_["metadata"]["name"]);
     });
   //LOG(warning) << "service deps: " << serviceIter->name;
@@ -199,6 +206,7 @@ void TemplateAnalyzer::processServiceDeps(
   // If the MS is not present in the db,
   // it is an external / central MS,
   // and should be added to the db.
+  //LOG(info) << serviceIter->serviceId << ", " << serviceIter->name;
   if (serviceIter == _microserviceCache.end())
   {
     model::Microservice externalService;
@@ -206,7 +214,9 @@ void TemplateAnalyzer::processServiceDeps(
     externalService.type = model::Microservice::ServiceType::CENTRAL;
     externalService.file = filePtr->id;
     externalService.serviceId = createIdentifier(externalService);
-    externalService.version = YAML::Dump(currentFile_["metadata"]["labels"]["app.kubernetes.io\/version"]);_ctx.db->persist(externalService);
+    externalService.version = YAML::Dump(currentFile_["metadata"]["labels"]["app.kubernetes.io\/version"]);
+    _microserviceCache.push_back(externalService);
+    _ctx.db->persist(externalService);
 
     helmTemplate.depends = externalService.serviceId;
   }
