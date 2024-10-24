@@ -32,7 +32,7 @@ add_custom_command(
     "Generating Thrift for yaml.thrift")
 
 add_library(yamlthrift STATIC
-  ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/yaml_constants.cpp
+#  ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/yaml_constants.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/yaml_types.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/gen-cpp/YamlService.cpp)
 
