@@ -11,6 +11,7 @@ namespace parser
 std::unordered_set<model::MicroserviceEdgeId> TemplateAnalyzer::_edgeCache;
 std::vector<model::Microservice> TemplateAnalyzer::_microserviceCache;
 std::mutex TemplateAnalyzer::_edgeCacheMutex;
+std::vector<model::Kafkatopic> TemplateAnalyzer::_kafkaTopicCache;
 
 TemplateAnalyzer::TemplateAnalyzer(
   cc::parser::ParserContext& ctx_,
@@ -56,7 +57,7 @@ TemplateAnalyzer::~TemplateAnalyzer()
   (util::OdbTransaction(_ctx.db))([this]{
     for (model::HelmTemplate& helmTemplate : _newTemplates)
     {
-      LOG(warning) << helmTemplate.id;
+      LOG(warning) << helmTemplate.id << " " << helmTemplate.name;
       _ctx.db->persist(helmTemplate);
     }
 
@@ -167,6 +168,8 @@ bool TemplateAnalyzer::visitKeyValuePairs(
     case DependencyType::CERTIFICATE:
       processCertificateDeps(path_, currentNode_, service_);
       break;
+    case DependencyType::KAFKATOPIC:
+      processKafkaTopicDeps(path_, currentNode_, service_);
     case DependencyType::RESOURCE:
     case DependencyType::OTHER:
       break;
@@ -201,7 +204,7 @@ void TemplateAnalyzer::processServiceDeps(
   auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == path_);
   helmTemplate.file = filePtr->id;
   helmTemplate.kind = YAML::Dump(currentFile_["kind"]);
-  helmTemplate.name = "";
+  helmTemplate.name = YAML::Dump(currentFile_["metadata"]["name"]);
 
   // If the MS is not present in the db,
   // it is an external / central MS,
@@ -371,6 +374,77 @@ void TemplateAnalyzer::processCertificateDeps(
   }
 
   addHelmTemplate(secretTemplate);
+}
+
+void TemplateAnalyzer::processKafkaTopicDeps(
+  const std::string& path_,
+  YAML::Node& currentFile_,
+  model::Microservice& service_)
+{
+  /* --- Process KafkaTopic templates --- */
+
+  // Find MS in database who responsible for creating the KafkaTopic.
+  auto serviceIter = std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
+    [&](const model::Microservice& service)
+    {
+      return path_.find(service.name) != std::string::npos;
+    });
+
+  // It is possible that more resources present in the file, separated by `---`.
+  auto kafkaTopicResources = YAML::LoadAll(path_);
+  std::for_each(kafkaTopicResources.begin(), kafkaTopicResources.end(),
+    [&](const YAML::Node& currentFilePart)
+    {
+      // Persist template data to db.
+      model::HelmTemplate helmTemplate;
+      helmTemplate.dependencyType = model::HelmTemplate::DependencyType::KAFKATOPIC;
+      auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == path_);
+      helmTemplate.file = filePtr->id;
+      helmTemplate.kind = YAML::Dump(currentFilePart["kind"]);
+      helmTemplate.name = YAML::Dump(currentFilePart["metadata"]["name"]);
+
+      // If the MS is not present in the db,
+      // it is an external / central MS,
+      // and should be added to the db.
+      if (serviceIter == _microserviceCache.end())
+      {
+        model::Microservice externalService;
+        externalService.name = "placeholder-external-service";
+        externalService.type = model::Microservice::ServiceType::CENTRAL;
+        externalService.file = filePtr->id;
+        externalService.serviceId = createIdentifier(externalService);
+        externalService.version = "placeholder-some-version";
+        _microserviceCache.push_back(externalService);
+        _ctx.db->persist(externalService);
+
+        helmTemplate.depends = externalService.serviceId;
+      }
+      else
+      {
+        helmTemplate.depends = serviceIter->serviceId;
+      }
+
+      auto kafkaIter = std::find_if(_kafkaTopicCache.begin(), _kafkaTopicCache.end(),
+        [&](const model::Kafkatopic& topic)
+        {
+          return topic.topicName == YAML::Dump(currentFilePart["spec"]["topicName"]);
+        });
+
+      if (kafkaIter == _kafkaTopicCache.end())
+      {
+        model::Kafkatopic topic;
+        topic.name = YAML::Dump(currentFilePart["metadata"]["name"]);
+        topic.topicName = YAML::Dump(currentFilePart["spec"]["topicName"]);
+        topic.replicaCount = currentFilePart["spec"]["replicas"].as<uint64_t>();
+        topic.partitionCount = currentFilePart["spec"]["partitions"].as<uint64_t>();
+
+        _kafkaTopicCache.push_back(topic);
+      }
+
+      helmTemplate.id = createIdentifier(helmTemplate);
+      addHelmTemplate(helmTemplate);
+      addEdge(service_.serviceId, helmTemplate.depends, helmTemplate.id, helmTemplate.kind);
+    });
 }
 
 void TemplateAnalyzer::processResources(
@@ -564,7 +638,10 @@ void TemplateAnalyzer::addHelmTemplate(model::HelmTemplate& helmTemplate_)
     });
 
   if (it == _newTemplates.end())
+  {
     _newTemplates.push_back(helmTemplate_);
+    _ctx.db->persist(helmTemplate_);
+  }
 }
 
 void TemplateAnalyzer::addEdge(
@@ -640,6 +717,7 @@ void TemplateAnalyzer::fillDependencyPairsMap()
   _dependencyPairs.insert({"Secret", model::HelmTemplate::DependencyType::MOUNT});
   _dependencyPairs.insert({"Certificate", model::HelmTemplate::DependencyType::CERTIFICATE});
   _dependencyPairs.insert({"VolumeClaim", model::HelmTemplate::DependencyType::RESOURCE});
+  _dependencyPairs.insert({"KafkaTopic", model::HelmTemplate::DependencyType::KAFKATOPIC});
 }
 
 void TemplateAnalyzer::fillResourceTypePairsMap()

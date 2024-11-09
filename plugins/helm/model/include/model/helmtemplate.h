@@ -26,6 +26,7 @@ struct HelmTemplate
     MOUNT,
     CERTIFICATE,
     RESOURCE,
+    KAFKATOPIC,
     OTHER
   };
 

@@ -11,6 +11,8 @@
 #include <model/microserviceedge-odb.hxx>
 #include <model/helmtemplate.h>
 #include <model/helmtemplate-odb.hxx>
+#include <model/kafkatopic.h>
+#include <model/kafkatopic-odb.hxx>
 
 #include <parser/parsercontext.h>
 
@@ -57,6 +59,8 @@ private:
 
   static std::vector<model::Microservice> _microserviceCache;
   model::Microservice _currentService;
+
+  static std::vector<model::Kafkatopic> _kafkaTopicCache;
 
   static std::mutex _edgeCacheMutex;
 

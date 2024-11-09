@@ -13,6 +13,8 @@
 #include <model/msresource-odb.hxx>
 #include <model/helmtemplate.h>
 #include <model/helmtemplate-odb.hxx>
+#include <model/kafkatopic.h>
+#include <model/kafkatopic-odb.hxx>
 
 #include <parser/parsercontext.h>
 
@@ -73,6 +75,18 @@ private:
     model::Microservice& service_);
 
   /**
+   *
+   * @param path_ The currently processed file path.
+   * @param currentFile_ The currently processed file as a YAML node.
+   * @param service_ The microservice in which the file is defined.
+   *
+   */
+  void processKafkaTopicDeps(
+    const std::string& path_,
+    YAML::Node& currentFile_,
+    model::Microservice& service_);
+
+  /**
    * Collect and store the various resources that a
    * cluster uses: CPU, memory, storage.
    * @param path_ The currently processed file path.
@@ -125,6 +139,8 @@ private:
 
   static std::vector<model::Microservice> _microserviceCache;
   model::Microservice _currentService;
+
+  static std::vector<model::Kafkatopic> _kafkaTopicCache;
 
   std::vector<model::MSResource> _msResources;
 

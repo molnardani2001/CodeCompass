@@ -5,7 +5,8 @@ set(ODB_SOURCES
   include/model/msresource.h
   include/model/yamlastnode.h
   include/model/yamlfile.h
-  include/model/yamlcontent.h)
+  include/model/yamlcontent.h
+  include/model/kafkatopic.h)
 
 generate_odb_files("${ODB_SOURCES}")
 

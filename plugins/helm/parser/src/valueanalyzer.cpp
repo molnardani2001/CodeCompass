@@ -15,6 +15,7 @@ namespace fs = boost::filesystem;
 std::unordered_set<model::MicroserviceEdgeId> ValueAnalyzer::_edgeCache;
 std::vector<model::Microservice> ValueAnalyzer::_microserviceCache;
 std::mutex ValueAnalyzer::_edgeCacheMutex;
+std::vector<model::Kafkatopic> ValueAnalyzer::_kafkaTopicCache;
 
 ValueAnalyzer::ValueAnalyzer(
   ParserContext& ctx_,
@@ -44,6 +45,17 @@ ValueAnalyzer::ValueAnalyzer(
         odb::query<model::Microservice>::type == model::Microservice::ServiceType::CENTRAL))
       {
         _microserviceCache.push_back(service);
+      }
+    });
+  }
+
+  if(_kafkaTopicCache.empty())
+  {
+    util::OdbTransaction{_ctx.db}([this]
+    {
+      for (const model::Kafkatopic& topic : _ctx.db->query<model::Kafkatopic>())
+      {
+        _kafkaTopicCache.push_back(topic);
       }
     });
   }
