@@ -331,41 +331,44 @@ void YamlParser::processRootKeys(model::FilePtr& file_, YAML::Node& loadedFile)
 
 bool YamlParser::collectAstNodes(model::FilePtr file_)
 {
-  try
-  {
-    YAML::Node currentFile = YAML::LoadFile(file_->path);
-
-    processFileType(file_, currentFile);
-    processRootKeys(file_, currentFile);
-
-    for (auto it = currentFile.begin(); it != currentFile.end(); ++it)
+  // There is a possibility that there are more than 1 resource definition in one yaml file separated with `---`, we should collect them all as AstNode
+  std::vector<YAML::Node> currentFile = YAML::LoadAllFromFile(file_->path);
+  std::for_each(currentFile.begin(), currentFile.end(),
+    [&](YAML::Node& currentFilePart)
     {
-      chooseCoreNodeType(it->first, file_, model::YamlAstNode::SymbolType::Key);
-      chooseCoreNodeType(it->second, file_, model::YamlAstNode::SymbolType::Value);
-    }
-  }
-  catch (YAML::ParserException& e)
-  {
-    LOG(warning) << "[yamlparser] Exception thrown in : " << file_->path << ": " << e.what();
+      try
+      {
+        processFileType(file_, currentFilePart);
+        processRootKeys(file_, currentFilePart);
 
-    util::OdbTransaction {_ctx.db} ([&]
-    {
-      model::BuildLog buildLog;
-      buildLog.location.file = file_;
-      buildLog.location.range.start.line = e.mark.line + 1;
-      buildLog.location.range.start.column = e.mark.column;
-      buildLog.location.range.end.line = e.mark.line + 1;
-      buildLog.location.range.end.column = e.mark.column;
-      buildLog.log.message = e.what();
-      buildLog.log.type = model::BuildLogMessage::Error;
+        for (auto it = currentFilePart.begin(); it != currentFilePart.end(); ++it)
+        {
+          chooseCoreNodeType(it->first, file_, model::YamlAstNode::SymbolType::Key);
+          chooseCoreNodeType(it->second, file_, model::YamlAstNode::SymbolType::Value);
+        }
+      }catch (YAML::ParserException& e)
+      {
+        LOG(warning) << "[yamlparser] Exception thrown in : " << file_->path << ": " << e.what();
 
-      _mutex.lock();
-      _buildLogs.push_back(buildLog);
-      _mutex.unlock();
+        util::OdbTransaction {_ctx.db} ([&]
+        {
+          model::BuildLog buildLog;
+          buildLog.location.file = file_;
+          buildLog.location.range.start.line = e.mark.line + 1;
+          buildLog.location.range.start.column = e.mark.column;
+          buildLog.location.range.end.line = e.mark.line + 1;
+          buildLog.location.range.end.column = e.mark.column;
+          buildLog.log.message = e.what();
+          buildLog.log.type = model::BuildLogMessage::Error;
+
+          _mutex.lock();
+          _buildLogs.push_back(buildLog);
+          _mutex.unlock();
+        });
+
+        return false;
+      }
     });
-
-    return false;
-  }
 
   return true;
 }
