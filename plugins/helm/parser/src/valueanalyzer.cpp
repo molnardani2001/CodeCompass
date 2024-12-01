@@ -12,9 +12,10 @@ namespace parser
 
 namespace fs = boost::filesystem;
 
-std::unordered_set<model::MicroserviceEdgeId> ValueAnalyzer::_edgeCache;
+std::unordered_set<model::DependencyEdgeId> ValueAnalyzer::_edgeCache;
 std::vector<model::Microservice> ValueAnalyzer::_microserviceCache;
 std::mutex ValueAnalyzer::_edgeCacheMutex;
+std::vector<model::Service> ValueAnalyzer::_serviceCache;
 std::vector<model::Kafkatopic> ValueAnalyzer::_kafkaTopicCache;
 
 ValueAnalyzer::ValueAnalyzer(
@@ -29,7 +30,7 @@ ValueAnalyzer::ValueAnalyzer(
   {
     util::OdbTransaction{_ctx.db}([this]
     {
-      for (const model::MicroserviceEdge& edge : _ctx.db->query<model::MicroserviceEdge>())
+      for (const model::DependencyEdge& edge : _ctx.db->query<model::DependencyEdge>())
       {
         _edgeCache.insert(edge.id);
       }
@@ -56,6 +57,17 @@ ValueAnalyzer::ValueAnalyzer(
       for (const model::Kafkatopic& topic : _ctx.db->query<model::Kafkatopic>())
       {
         _kafkaTopicCache.push_back(topic);
+      }
+    });
+  }
+
+  if(_serviceCache.empty())
+  {
+    util::OdbTransaction{_ctx.db}([this]
+    {
+      for (const model::Service& service : _ctx.db->query<model::Service>())
+      {
+        _serviceCache.push_back(service);
       }
     });
   }
@@ -125,25 +137,55 @@ bool ValueAnalyzer::visitKeyValuePairs(
       visitKeyValuePairs(it->second, service_, file_);
     else
     {
-      std::string current(YAML::Dump(it->second));
-      auto iter = std::find_if(_microserviceCache.begin(),
-        _microserviceCache.end(),
-        [&, this](const model::Microservice& other) {
-          return current == other.name;
+      std::string currentValue(YAML::Dump(it->second));
+
+      // If a microservice has another microservice's Service name
+      // in its values.yaml file it means
+      auto serviceIter = std::find_if(_serviceCache.begin(),
+        _serviceCache.end(),
+        [&, this](const model::Service& other) {
+          return currentValue == other.name;
       });
 
-      if (iter != _microserviceCache.end())
+      if (serviceIter != _serviceCache.end())
       {
-        model::HelmTemplate helmTemplate;
-        helmTemplate.name = "";
-        helmTemplate.dependencyType = model::HelmTemplate::DependencyType::SERVICE;
-        helmTemplate.depends = service_.serviceId;
-        helmTemplate.kind = "Service";
-        helmTemplate.file = file_->id;
-        helmTemplate.id = createIdentifier(helmTemplate);
-        addHelmTemplate(helmTemplate);
+//        auto microserviceIter = std::find_if(_microserviceCache.begin(),
+//          _microserviceCache.end(),
+//          [&](const model::Microservice& other)
+//          {
+//            return serviceIter->serviceId == other.serviceId;
+//          });
 
-        addEdge(service_.serviceId, iter->serviceId, helmTemplate.id, "Service");
+//        if ( microserviceIter != _microserviceCache.end())
+//        {
+          model::HelmTemplate helmTemplate = std::move(*findHelmTemplate(serviceIter->helmTemplateId));
+          addEdge(service_.serviceId, serviceIter->depends, helmTemplate.id, "Service");
+//        }
+      }
+
+//      if (iter != _microserviceCache.end())
+//      {
+//        model::HelmTemplate helmTemplate;
+//        helmTemplate.name = "";
+//        helmTemplate.dependencyType = model::HelmTemplate::DependencyType::SERVICE;
+//        helmTemplate.depends = service_.serviceId;
+//        helmTemplate.kind = "Service";
+//        helmTemplate.file = file_->id;
+//        helmTemplate.id = createIdentifier(helmTemplate);
+//        addHelmTemplate(helmTemplate);
+//       }
+
+      auto kafkaTopicIter = std::find_if(_kafkaTopicCache.begin(),
+        _kafkaTopicCache.end(),
+        [&](const model::Kafkatopic& topic)
+        {
+            return currentValue == topic.topicName;
+        });
+
+      if (kafkaTopicIter != _kafkaTopicCache.end())
+      {
+        model::HelmTemplate helmTemplate = std::move(*findHelmTemplate(kafkaTopicIter->helmTemplateId));
+        addEdge(service_.serviceId, kafkaTopicIter->depends, helmTemplate.id, "Kafka-topic");
       }
     }
   }
@@ -171,7 +213,7 @@ void ValueAnalyzer::addEdge(
   static std::mutex m;
   std::lock_guard<std::mutex> guard(m);
 
-  model::MicroserviceEdgePtr edge = std::make_shared<model::MicroserviceEdge>();
+  model::DependencyEdgePtr edge = std::make_shared<model::DependencyEdge>();
 
   edge->from = std::make_shared<model::Microservice>();
   edge->from->serviceId = from_;
@@ -189,6 +231,13 @@ void ValueAnalyzer::addEdge(
   {
     _newEdges.push_back(edge);
   }
+}
+
+std::shared_ptr<model::HelmTemplate> ValueAnalyzer::findHelmTemplate(
+  model::HelmTemplateId helmTemplateId)
+{
+  return _ctx.db->query_one<model::HelmTemplate>(
+    odb::query<model::HelmTemplate>::id == helmTemplateId);
 }
 
 }

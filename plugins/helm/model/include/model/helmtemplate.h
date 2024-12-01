@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "yaml-cpp/yaml.h"
+
 #include <odb/core.hxx>
 #include <odb/lazy-ptr.hxx>
 #include <odb/nullable.hxx>
@@ -46,7 +48,6 @@ struct HelmTemplate
 
   #pragma db not_null
   MicroserviceId depends;
-
   bool operator==(HelmTemplate& rhs);
 };
 

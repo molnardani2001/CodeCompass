@@ -85,7 +85,8 @@ private:
   bool accept(const std::string& path_) const;
 
   std::unordered_set<model::FileId> _fileIdCache;
-  std::map<std::string, YAML::Node> _fileAstCache;
+  std::map<std::string, std::vector<YAML::Node>> _fileAstCache;
+  //TODO: This also should be std::vector<>
   std::map<std::string, YAML::Node> _valuesAstCache;
   std::unique_ptr<util::JobQueueThreadPool<std::string>> _pool;
   std::atomic<int> _visitedFileCount;

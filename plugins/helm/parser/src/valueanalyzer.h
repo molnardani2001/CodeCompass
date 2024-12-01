@@ -7,12 +7,14 @@
 
 #include <model/microservice.h>
 #include <model/microservice-odb.hxx>
-#include <model/microserviceedge.h>
-#include <model/microserviceedge-odb.hxx>
+#include <model/dependencyedge.h>
+#include <model/dependencyedge-odb.hxx>
 #include <model/helmtemplate.h>
 #include <model/helmtemplate-odb.hxx>
 #include <model/kafkatopic.h>
 #include <model/kafkatopic-odb.hxx>
+#include <model/service.h>
+#include <model/service-odb.hxx>
 
 #include <parser/parsercontext.h>
 
@@ -38,6 +40,9 @@ private:
     std::string value_,
     YAML::Node& currentFile_);
 
+  std::shared_ptr<model::HelmTemplate> findHelmTemplate(
+      model::HelmTemplateId helmTemplateId);
+
   void addEdge(
     const model::MicroserviceId& from_,
     const model::MicroserviceId& to_,
@@ -52,14 +57,15 @@ private:
   void addHelmTemplate(
     model::HelmTemplate& helmTemplate_);
 
-  static std::unordered_set<model::MicroserviceEdgeId> _edgeCache;
-  std::vector<model::MicroserviceEdgePtr> _newEdges;
+  static std::unordered_set<model::DependencyEdgeId> _edgeCache;
+  std::vector<model::DependencyEdgePtr> _newEdges;
   std::vector<model::HelmTemplate> _newTemplates;
   uint64_t _templateCounter;
 
   static std::vector<model::Microservice> _microserviceCache;
   model::Microservice _currentService;
 
+  static std::vector<model::Service> _serviceCache;
   static std::vector<model::Kafkatopic> _kafkaTopicCache;
 
   static std::mutex _edgeCacheMutex;

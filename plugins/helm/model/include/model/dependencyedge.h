@@ -13,16 +13,16 @@ namespace cc
 namespace model
 {
 
-struct MicroserviceEdge;
-typedef std::shared_ptr<MicroserviceEdge> MicroserviceEdgePtr;
+struct DependencyEdge;
+typedef std::shared_ptr<DependencyEdge> DependencyEdgePtr;
 
-typedef std::uint64_t MicroserviceEdgeId;
+typedef std::uint64_t DependencyEdgeId;
 
 #pragma db object
-struct MicroserviceEdge
+struct DependencyEdge
 {
   #pragma db id
-  MicroserviceEdgeId id;
+  DependencyEdgeId id;
 
   #pragma db not_null
   uint64_t helperId;
@@ -45,15 +45,15 @@ struct MicroserviceEdge
   std::string toString() const;
 };
 
-inline std::string MicroserviceEdge::toString() const
+inline std::string DependencyEdge::toString() const
 {
-  return std::string("MicroserviceEdge")
+  return std::string("DependencyEdge")
     .append("\nfrom = ").append(std::to_string(from->serviceId))
     .append("\nto = ").append(std::to_string(to->serviceId))
     .append("\ntype = ");
 }
 
-inline std::uint64_t createIdentifier(const MicroserviceEdge& edge_)
+inline std::uint64_t createIdentifier(const DependencyEdge& edge_)
 {
   return util::fnvHash(
     std::to_string(edge_.from->serviceId) +

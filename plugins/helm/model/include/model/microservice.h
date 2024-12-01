@@ -37,6 +37,8 @@ struct Microservice
   FileId file;
 
   ServiceType type;
+
+  std::uint8_t podCount;
 };
 
 inline std::uint64_t createIdentifier(const Microservice& service_)

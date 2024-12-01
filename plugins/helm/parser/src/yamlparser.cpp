@@ -220,7 +220,11 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
       }
 
       _mutex.lock();
-      _fileAstCache.insert({file_->path, loadedFile});
+      auto it = _fileAstCache.find(file_->path);
+      if (it != _fileAstCache.end())
+        it->second.push_back(loadedFile);
+      else
+        _fileAstCache.insert({file_->path, {loadedFile}});
       _mutex.unlock();
     }
     else if (file_->filename == "values.yaml" || file_->filename == "values.yml")
@@ -234,21 +238,17 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
       _mutex.lock();
       _valuesAstCache.insert({file_->path, loadedFile});
       _mutex.unlock();
-      /*if (file_->path.find("charts/") == std::string::npos)
-      {
-        model::Microservice service;
-        service.file = file_->id;
-        service.name = fs::path(file_->path).parent_path().filename().string();
-        service.serviceId = cc::model::createIdentifier(service);
-        _ctx.db->persist(service);
-      }*/
     }
     else if (file_->path.find("templates/") != std::string::npos)
     {
       file->type = model::YamlFile::Type::HELM_TEMPLATE;
 
       _mutex.lock();
-      _fileAstCache.insert({file_->path, loadedFile});
+      auto it = _fileAstCache.find(file_->path);
+      if (it != _fileAstCache.end())
+        it->second.push_back(loadedFile);
+      else
+        _fileAstCache.insert({file_->path, {loadedFile}});
       _mutex.unlock();
     }
     else if (file_->filename == "compose.yaml" || file_->filename == "compose.yml"
@@ -268,10 +268,7 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
  */
 void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& loadedFile_)
 {
-  //if (!loadedFile_["dependencies"] || !loadedFile_["dependencies"].IsSequence())
-  //{
-    //_areDependenciesListed = false;
-
+  //TODO: the top level is called integration chart and not product chart, rather switch those 2 terms
     model::Microservice service;
     service.file = file_->id;
     service.type = model::Microservice::ServiceType::PRODUCT;
@@ -284,9 +281,6 @@ void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& load
       _ctx.db->persist(service);
       _processedMS.push_back(service.name);
     }
-
-  //  return;
-  //}
 
   util::OdbTransaction {_ctx.db} ([&]
   {
@@ -331,7 +325,10 @@ void YamlParser::processRootKeys(model::FilePtr& file_, YAML::Node& loadedFile)
 
 bool YamlParser::collectAstNodes(model::FilePtr file_)
 {
-  // There is a possibility that there are more than 1 resource definition in one yaml file separated with `---`, we should collect them all as AstNode
+  // There is a possibility that there are more than 1
+  // resource definition in one yaml file
+  // separated with `---`, we should collect them all
+  // as AstNode
   std::vector<YAML::Node> currentFile = YAML::LoadAllFromFile(file_->path);
   std::for_each(currentFile.begin(), currentFile.end(),
     [&](YAML::Node& currentFilePart)

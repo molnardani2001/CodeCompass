@@ -4,8 +4,8 @@
 
 #include <boost/filesystem.hpp>
 
-#include <model/microserviceedge.h>
-#include <model/microserviceedge-odb.hxx>
+#include <model/dependencyedge.h>
+#include <model/dependencyedge-odb.hxx>
 #include <model/msresource.h>
 #include <model/msresource-odb.hxx>
 #include <model/helmtemplate.h>
@@ -27,8 +27,8 @@ namespace language
 
 namespace fs = boost::filesystem;
 
-typedef odb::query<model::MicroserviceEdge> EdgeQuery;
-typedef odb::result<model::MicroserviceEdge> EdgeResult;
+typedef odb::query<model::DependencyEdge> EdgeQuery;
+typedef odb::result<model::DependencyEdge> EdgeResult;
 typedef odb::query<model::Microservice> MicroserviceQuery;
 typedef odb::result<model::Microservice> MicroserviceResult;
 typedef odb::query<model::MSResource> MSResourceQuery;
@@ -259,13 +259,13 @@ std::multimap<model::MicroserviceId, std::string> YamlFileDiagram::getDependentS
   std::multimap<model::MicroserviceId, std::string> dependencies;
 
   _transaction([&, this] {
-    EdgeResult res = _db->query<model::MicroserviceEdge>(
+    EdgeResult res = _db->query<model::DependencyEdge>(
       (reverse_
        ? EdgeQuery::to->serviceId
        : EdgeQuery::from->serviceId) == std::stoull(node_)
       && (EdgeQuery::type == "Service"));
 
-    for (const model::MicroserviceEdge &edge: res)
+    for (const model::DependencyEdge &edge: res)
     {
       model::MicroserviceId serviceId = reverse_ ? edge.from->serviceId : edge.to->serviceId;
       if (std::to_string(serviceId) != node_)
@@ -339,13 +339,13 @@ std::multimap<model::MicroserviceId, std::string> YamlFileDiagram::getDependentC
   std::multimap<model::MicroserviceId, std::string> dependencies;
 
   _transaction([&, this]{
-    EdgeResult res = _db->query<model::MicroserviceEdge>(
+    EdgeResult res = _db->query<model::DependencyEdge>(
       (reverse_
        ? EdgeQuery::to->serviceId
        : EdgeQuery::from->serviceId) == std::stoull(node_)
       && (EdgeQuery::type == "ConfigMap"));
 
-    for (const model::MicroserviceEdge& edge : res)
+    for (const model::DependencyEdge& edge : res)
     {
       auto helm = _db->query_one<model::HelmTemplate>(
         HelmTemplateQuery::id == edge.connection->id);
@@ -421,13 +421,13 @@ std::multimap<model::MicroserviceId, std::string> YamlFileDiagram::getDependentS
   std::multimap<model::MicroserviceId, std::string> dependencies;
 
   _transaction([&, this]{
-    EdgeResult res = _db->query<model::MicroserviceEdge>(
+    EdgeResult res = _db->query<model::DependencyEdge>(
       (reverse_
        ? EdgeQuery::to->serviceId
        : EdgeQuery::from->serviceId) == std::stoull(node_)
       && (EdgeQuery::type == "Secret"));
 
-    for (const model::MicroserviceEdge& edge : res)
+    for (const model::DependencyEdge& edge : res)
     {
       auto helm = _db->query_one<model::HelmTemplate>(
         HelmTemplateQuery::id == edge.connection->id);

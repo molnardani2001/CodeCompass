@@ -7,14 +7,16 @@
 
 #include <model/microservice.h>
 #include <model/microservice-odb.hxx>
-#include <model/microserviceedge.h>
-#include <model/microserviceedge-odb.hxx>
+#include <model/dependencyedge.h>
+#include <model/dependencyedge-odb.hxx>
 #include <model/msresource.h>
 #include <model/msresource-odb.hxx>
 #include <model/helmtemplate.h>
 #include <model/helmtemplate-odb.hxx>
 #include <model/kafkatopic.h>
 #include <model/kafkatopic-odb.hxx>
+#include <model/service.h>
+#include <model/service-odb.hxx>
 
 #include <parser/parsercontext.h>
 
@@ -28,7 +30,7 @@ class TemplateAnalyzer
 public:
   TemplateAnalyzer(
     ParserContext& ctx_,
-    std::map<std::string, YAML::Node>& fileAstCache_);
+    std::map<std::string, std::vector<YAML::Node>>& fileAstCache_);
 
   ~TemplateAnalyzer();
 
@@ -132,8 +134,8 @@ private:
   std::map<std::string, model::HelmTemplate::DependencyType> _dependencyPairs;
   std::map<std::string, model::MSResource::ResourceType> _msResourcePairs;
 
-  static std::unordered_set<model::MicroserviceEdgeId> _edgeCache;
-  std::vector<model::MicroserviceEdgePtr> _newEdges;
+  static std::unordered_set<model::DependencyEdgeId> _edgeCache;
+  std::vector<model::DependencyEdgePtr> _newEdges;
   std::vector<model::HelmTemplate> _newTemplates;
   uint64_t templateCounter;
 
@@ -141,13 +143,14 @@ private:
   model::Microservice _currentService;
 
   static std::vector<model::Kafkatopic> _kafkaTopicCache;
+  static std::vector<model::Service> _serviceCache;
 
   std::vector<model::MSResource> _msResources;
 
   static std::mutex _edgeCacheMutex;
 
   ParserContext& _ctx;
-  std::map<std::string, YAML::Node>& _fileAstCache;
+  std::map<std::string, std::vector<YAML::Node>>& _fileAstCache;
 };
 }
 }

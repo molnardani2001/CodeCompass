@@ -1,8 +1,7 @@
-#ifndef CODECOMPASS_KAFKATOPIC_H
-#define CODECOMPASS_KAFKATOPIC_H
+#ifndef CODECOMPASS_SERVICE_H
+#define CODECOMPASS_SERVICE_H
 
 #include <odb/core.hxx>
-#include <odb/lazy-ptr.hxx>
 #include <odb/nullable.hxx>
 
 #include "model/file.h"
@@ -16,35 +15,36 @@ namespace cc
 namespace model
 {
 
-typedef std::uint64_t KafkaTopicId;
+typedef std::uint64_t ServiceId;
 
 #pragma db object
-struct Kafkatopic
+struct Service
 {
   #pragma db id
-  KafkaTopicId topicId;
+  ServiceId serviceId;
 
   #pragma db not_null
   std::string name;
 
-  std::string topicName;
+  std::string ipFamilyPolicy;
 
-  std::uint64_t replicaCount;
-
-  std::uint64_t partitionCount;
+  std::string type;
 
   #pragma db not_null
   MicroserviceId depends;
 
   #pragma db not_null
   HelmTemplateId helmTemplateId;
+  //TODO: consider ports here as well
 };
 
-inline std::uint64_t createIdentifier(const Kafkatopic& topic_)
+inline std::uint64_t createIdentifier(const Service& service_)
 {
   return util::fnvHash(
-    topic_.topicName);
+    service_.name + service_.type
+    );
 }
 }
 }
-#endif //CODECOMPASS_KAFKATOPIC_H
+
+#endif //CODECOMPASS_SERVICE_H
