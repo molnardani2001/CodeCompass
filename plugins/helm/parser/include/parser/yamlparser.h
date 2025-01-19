@@ -9,6 +9,7 @@
 #include <util/parserutil.h>
 
 #include "yaml-cpp/yaml.h"
+#include "model/chart.h"
 
 namespace cc
 {
@@ -34,7 +35,8 @@ private:
 
   void processIntegrationChart(
     model::FilePtr& file_,
-    YAML::Node& loadedFile);
+    YAML::Node& loadedFile,
+    model::Chart& chart);
 
   /**
    * The first-level keys in a YAML files usually have great significance,
@@ -95,6 +97,8 @@ private:
   std::vector<model::YamlContentPtr> _rootPairs;
   std::vector<model::BuildLog> _buildLogs;
   std::vector<std::string> _processedMS;
+  std::vector<model::Chart> _chartCache;
+  std::vector<model::ChartDependencyEdgePtr> _chartEdges;
 
   std::mutex _mutex;
   bool _areDependenciesListed;

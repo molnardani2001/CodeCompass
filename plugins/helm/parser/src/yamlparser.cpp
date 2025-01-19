@@ -29,6 +29,10 @@
 #include <model/yamlcontent-odb.hxx>
 #include <model/yamlastnode.h>
 #include <model/yamlastnode-odb.hxx>
+#include <model/chart.h>
+#include <model/chart-odb.hxx>
+#include <model/chartdependencyedge.h>
+#include <model/chartdependencyedge-odb.hxx>
 
 #include "parser/yamlparser.h"
 #include "valueanalyzer.h"
@@ -196,28 +200,65 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
 
     if (file_->filename == "Chart.yaml" || file_->filename == "Chart.yml")
     {
-      if (file_->path.find("charts/") != std::string::npos)
+      file->type = model::YamlFile::HELM_CHART;
+      model::Chart chart;
+      auto chartIterator = std::find_if(_chartCache.begin(), _chartCache.end(),
+      [&](const model::Chart& chart_)
       {
-        file->type = model::YamlFile::Type::HELM_SUBCHART;
-        
-        if (std::find(_processedMS.begin(), _processedMS.end(), YAML::Dump(loadedFile["name"])) == _processedMS.end()
-          && std::find(_processedMS.begin(), _processedMS.end(), YAML::Dump(loadedFile["version"])) == _processedMS.end())
-        {
-          model::Microservice service;
-          service.file = file_->id;
-          service.name = YAML::Dump(loadedFile["name"]);
-          service.type = model::Microservice::ServiceType::INTEGRATION;
-          service.serviceId = cc::model::createIdentifier(service);
-          service.version = YAML::Dump(loadedFile["version"]);
-          _ctx.db->persist(service);
-          _processedMS.push_back(service.name);
-        }
-      }
-      else
+        return chart_.name == YAML::Dump(loadedFile["name"])
+              || chart_.alias == YAML::Dump(loadedFile["name"]);
+      });
+
+      if (chartIterator != _chartCache.end())
       {
-        file->type = model::YamlFile::Type::HELM_CHART;
-        processIntegrationChart(file_, loadedFile);
+        // It was in an integration chart's dependencies list, so it is a sub-chart
+        chart = std::move(*chartIterator);
+        _chartCache.erase(chartIterator);
+      } else
+      {
+        chart.name = YAML::Dump(loadedFile["name"]);
+        chart.alias = "";
+        chart.version = YAML::Dump(loadedFile["version"]);
+        chart.chartId = cc::model::createIdentifier(chart);
       }
+
+      chart.file = file_->id;
+
+      fs::path chartPath(file_->path);
+
+      // Determine Chart type
+      auto parentDir = chartPath.parent_path();
+      bool isSubchart = file_->path.find("charts/") != std::string::npos;
+      bool hasSubcharts = fs::exists(parentDir / "charts") && fs::is_directory(parentDir / "charts");
+
+      if (isSubchart && hasSubcharts)
+      {
+        chart.type = model::Chart::ChartType::SUB_INTEGRATION_CHART;
+      } else if (isSubchart)
+      {
+        chart.type = model::Chart::ChartType::SUB_CHART;
+      } else if (hasSubcharts)
+      {
+        chart.type = model::Chart::ChartType::INTEGRATION_CHART;
+      } else
+      {
+        chart.type = model::Chart::ChartType::STANDALONE_CHART;
+      }
+
+
+      switch(chart.type)
+      {
+        case model::Chart::ChartType::STANDALONE_CHART:
+        case model::Chart::ChartType::SUB_CHART:
+          // Do nothing just save the chart
+          break;
+        case model::Chart::ChartType::INTEGRATION_CHART:
+        case model::Chart::ChartType::SUB_INTEGRATION_CHART:
+          processIntegrationChart(file_, loadedFile, chart);
+          break;
+      }
+
+      _ctx.db->persist(chart);
 
       _mutex.lock();
       auto it = _fileAstCache.find(file_->path);
@@ -251,11 +292,11 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
         _fileAstCache.insert({file_->path, {loadedFile}});
       _mutex.unlock();
     }
-    else if (file_->filename == "compose.yaml" || file_->filename == "compose.yml"
-          || file_->filename == "docker-compose.yaml" || file_->filename == "docker-compose.yml")
-      file->type = model::YamlFile::Type::DOCKER_COMPOSE;
-    else if (file_->filename.find("ci") != std::string::npos)
-      file->type = model::YamlFile::Type::CI;
+//    else if (file_->filename == "compose.yaml" || file_->filename == "compose.yml"
+//          || file_->filename == "docker-compose.yaml" || file_->filename == "docker-compose.yml")
+//      file->type = model::YamlFile::Type::DOCKER_COMPOSE;
+//    else if (file_->filename.find("ci") != std::string::npos)
+//      file->type = model::YamlFile::Type::CI;
 
     _ctx.db->persist(file);
   });
@@ -263,46 +304,44 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
 
 /*
  * Integration charts (root charts) may contain several
- * aliased microservices that are otherwise not contained
- * in any subcharts.
+ * aliased subcharts.
  */
-void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& loadedFile_)
+void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& loadedFile_, model::Chart& integrationChart)
 {
-  //TODO: the top level is called integration chart and not product chart, rather switch those 2 terms
-    model::Microservice service;
-    service.file = file_->id;
-    service.type = model::Microservice::ServiceType::PRODUCT;
-    service.name = YAML::Dump(loadedFile_["name"]);
-    service.version = YAML::Dump(loadedFile_["version"]);
-
-    if (std::find(_processedMS.begin(), _processedMS.end(), service.name) == _processedMS.end())
-    {
-      service.serviceId = cc::model::createIdentifier(service);
-      _ctx.db->persist(service);
-      _processedMS.push_back(service.name);
-    }
-
   util::OdbTransaction {_ctx.db} ([&]
   {
     for (auto iter = loadedFile_["dependencies"].begin();
          iter != loadedFile_["dependencies"].end();
          ++iter)
     {
-      model::Microservice service;
-      service.file = file_->id;
-      service.type = model::Microservice::ServiceType::INTEGRATION;
-      service.version = YAML::Dump((*iter)["version"]);
+      model::Chart subchart;
+      subchart.name = YAML::Dump((*iter)["name"]);
+      subchart.version = YAML::Dump((*iter)["version"]);
 
       if ((*iter)["alias"])
-        service.name = YAML::Dump((*iter)["alias"]);
+        subchart.alias = YAML::Dump((*iter)["alias"]);
       else
-        service.name = YAML::Dump((*iter)["name"]);
+        subchart.alias = "";
 
-      if (std::find(_processedMS.begin(), _processedMS.end(), service.name) == _processedMS.end())
+      subchart.type = model::Chart::ChartType::SUB_CHART;
+      subchart.chartId = cc::model::createIdentifier(subchart);
+
+      if (std::find_if(_chartCache.begin(), _chartCache.end(), [&, this](const model::Chart& chart_)
       {
-        service.serviceId = cc::model::createIdentifier(service);
-        _ctx.db->persist(service);
-        _processedMS.push_back(service.name);
+        return chart_.name == subchart.name && chart_.alias == subchart.alias;
+      }) == _chartCache.end())
+      {
+        model::ChartDependencyEdgePtr edge = std::make_shared<model::ChartDependencyEdge>();
+
+        edge->from = std::make_shared<model::Chart>();
+        edge->from->chartId = integrationChart.chartId;
+        edge->to = std::make_shared<model::Chart>();
+        edge->to->chartId = subchart.chartId;
+
+        edge->id = model::createIdentifier(*edge);
+
+        _chartEdges.push_back(edge);
+        _chartCache.push_back(subchart);
       }
     }
   });
@@ -524,6 +563,27 @@ YamlParser::~YamlParser()
 
      for (model::BuildLog& log : _buildLogs)
        _ctx.db->persist(log);
+
+     for (model::Chart& chart : _chartCache)
+     {
+       auto newEnd = std::remove_if(_chartEdges.begin(), _chartEdges.end(), [&](const model::ChartDependencyEdgePtr& item)
+       {
+        return chart.chartId == item->from->chartId || chart.chartId == item->to->chartId;
+       });
+
+       if(newEnd != _chartEdges.end())
+       {
+        _chartEdges.erase(newEnd, _chartEdges.end());
+       }
+
+      LOG(warning) << "[yamlparser] processed "
+                   << chart.name
+                   << " (alias: "
+                   << chart.alias
+                   << " ) as a dependency of an integration chart, but never processed as an actual chart";
+     }
+
+     util::persistAll(_chartEdges, _ctx.db);
   });
 }
 

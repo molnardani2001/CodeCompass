@@ -4,6 +4,7 @@
 #include <odb/core.hxx>
 #include <odb/lazy-ptr.hxx>
 #include <odb/nullable.hxx>
+#include <string>
 
 #include "model/file.h"
 #include "model/microservice.h"

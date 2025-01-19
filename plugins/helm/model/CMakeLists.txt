@@ -7,7 +7,9 @@ set(ODB_SOURCES
   include/model/yamlfile.h
   include/model/yamlcontent.h
   include/model/kafkatopic.h
-  include/model/service.h)
+  include/model/service.h
+  include/model/chart.h
+  include/model/chartdependencyedge.h)
 
 generate_odb_files("${ODB_SOURCES}")
 

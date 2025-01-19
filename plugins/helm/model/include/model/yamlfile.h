@@ -24,7 +24,6 @@ struct YamlFile
   {
     DOCKER_COMPOSE,
     HELM_CHART,
-    HELM_SUBCHART,
     HELM_TEMPLATE,
     HELM_VALUES,
     CI,
