@@ -13,10 +13,12 @@
 #include <model/msresource-odb.hxx>
 #include <model/helmtemplate.h>
 #include <model/helmtemplate-odb.hxx>
-#include <model/kafkatopic.h>
-#include <model/kafkatopic-odb.hxx>
-#include <model/service.h>
-#include <model/service-odb.hxx>
+#include <model/helmtemplatedependencyedge.h>
+#include <model/helmtemplatedependencyedge-odb.hxx>
+//#include <model/kafkatopic.h>
+//#include <model/kafkatopic-odb.hxx>
+//#include <model/service.h>
+//#include <model/service-odb.hxx>
 
 #include <parser/parsercontext.h>
 
@@ -30,7 +32,8 @@ class TemplateAnalyzer
 public:
   TemplateAnalyzer(
     ParserContext& ctx_,
-    std::map<std::string, std::vector<YAML::Node>>& fileAstCache_);
+    std::map<std::string, std::vector<YAML::Node>>& fileAstCache_,
+    std::map<std::string, std::vector<std::pair<std::string, YAML::Node>>>& templateCache_);
 
   ~TemplateAnalyzer();
 
@@ -76,36 +79,54 @@ private:
     YAML::Node& currentFile_,
     model::Microservice& service_);
 
-  /**
-   *
-   * @param path_ The currently processed file path.
-   * @param currentFile_ The currently processed file as a YAML node.
-   * @param service_ The microservice in which the file is defined.
-   *
-   */
-  void processKafkaTopicDeps(
-    const std::string& path_,
-    YAML::Node& currentFile_,
-    model::Microservice& service_);
-
-  /**
-   * Collect and store the various resources that a
-   * cluster uses: CPU, memory, storage.
-   * @param path_ The currently processed file path.
-   * @param currentFile_ The currently processed file as a YAML node.
-   * @param service_ The microservice in which the file is defined.
-   */
   void processResources(
-    const std::string& path_,
-    YAML::Node& currentFile_,
-    model::Microservice& service_);
+    YAML::Node& node_,
+    model::Workload& workload_);
 
   void processStorageResources(
-    const std::string& path_,
-    YAML::Node& currentFile_,
-    model::Microservice& service_);
+    const YAML::Node& node_,
+    model::Workload& workload_);
+
+  bool isValidTemplate(const YAML::Node& rootNode);
+
+  static bool allSelectorsFoundInLabels(
+    const std::string& labels,
+    const std::vector<std::string>& selectors);
+
+  void processTemplateCommonProperties(
+    model::HelmTemplate& helmTemplate_,
+    const std::pair<std::string, YAML::Node>& currentFile_);
+
+  void processWorkloads(
+    const std::vector<std::pair<std::string, YAML::Node>>& workloads_);
+
+  void processConfigMaps(
+    const std::vector<std::pair<std::string, YAML::Node>>& configmaps_);
+
+  void processSecrets(
+    const std::vector<std::pair<std::string, YAML::Node>>& secrets_);
+
+  void processKafkaTopics(
+    const std::vector<std::pair<std::string, YAML::Node>>& kafkaTopics_);
+
+  void processServices(
+    const std::vector<std::pair<std::string, YAML::Node>>& services_);
+
+  void processDeployment(
+    std::unique_ptr<model::Workload>& workload_, const YAML::Node& node_);
+
+  void processDaemonSet(
+    std::unique_ptr<model::Workload>& workload_, const YAML::Node& node_);
+
+  void processStatefulSet(
+    std::unique_ptr<model::Workload>& workload_, const YAML::Node& node_);
 
   void addHelmTemplate(model::HelmTemplate& helmTemplate_);
+
+  void addEdge(
+    model::HelmTemplateId from_,
+    model::HelmTemplateId to_
+  );
 
   void addEdge(
     const model::MicroserviceId& from_,
@@ -115,6 +136,9 @@ private:
 
   void fillDependencyPairsMap();
   void fillResourceTypePairsMap();
+
+  void fillHelmTemplateHandlers();
+  void fillWorkloadHandlers();
 
   std::pair<float, std::string> convertUnit(
     std::string amount_,
@@ -129,21 +153,33 @@ private:
     std::vector<YAML::Node>& nodes_,
     YAML::Node& node_);
 
-  int LCSubStr(std::string& s1, std::string& s2, int m, int n);
+  static model::Chart findParentChart(
+    const std::string& templatePath_);
 
-  std::map<std::string, model::HelmTemplate::DependencyType> _dependencyPairs;
+  std::map<std::string, model::HelmTemplate::TemplateType> _dependencyPairs;
   std::map<std::string, model::MSResource::ResourceType> _msResourcePairs;
+
+  std::vector<std::pair<
+    std::string,
+    std::function<void(std::vector<std::pair<std::string, YAML::Node>>)>>> _helmTemplateHandlers;
+
+  std::map<std::string, std::function<void(std::unique_ptr<model::Workload>&, const YAML::Node&)>> _workloadHandlers;
 
   static std::unordered_set<model::DependencyEdgeId> _edgeCache;
   std::vector<model::DependencyEdgePtr> _newEdges;
+
+  static std::unordered_set<model::HelmTemplateDependencyEdgeId> _helmTemplateEdgeCache;
+  std::vector<model::HelmTemplateDependencyEdgePtr> _helmTemplateEdges;
+
   std::vector<model::HelmTemplate> _newTemplates;
   uint64_t templateCounter;
 
   static std::vector<model::Microservice> _microserviceCache;
-  model::Microservice _currentService;
+  static std::vector<model::Chart> _chartCache;
 
-  static std::vector<model::Kafkatopic> _kafkaTopicCache;
-  static std::vector<model::Service> _serviceCache;
+  //static std::vector<model::Kafkatopic> _kafkaTopicCache;
+  //static std::vector<model::Service> _serviceCache;
+  static std::vector<model::HelmTemplate> _helmTemplateCache;
 
   std::vector<model::MSResource> _msResources;
 
@@ -151,6 +187,7 @@ private:
 
   ParserContext& _ctx;
   std::map<std::string, std::vector<YAML::Node>>& _fileAstCache;
+  std::map<std::string, std::vector<std::pair<std::string, YAML::Node>>>& _templateCache;
 };
 }
 }

@@ -48,16 +48,16 @@ struct DependencyEdge
 inline std::string DependencyEdge::toString() const
 {
   return std::string("DependencyEdge")
-    .append("\nfrom = ").append(std::to_string(from->serviceId))
-    .append("\nto = ").append(std::to_string(to->serviceId))
+    .append("\nfrom = ").append(std::to_string(from->microserviceId))
+    .append("\nto = ").append(std::to_string(to->microserviceId))
     .append("\ntype = ");
 }
 
 inline std::uint64_t createIdentifier(const DependencyEdge& edge_)
 {
   return util::fnvHash(
-    std::to_string(edge_.from->serviceId) +
-    std::to_string(edge_.to->serviceId) +
+    std::to_string(edge_.from->microserviceId) +
+    std::to_string(edge_.to->microserviceId) +
     std::to_string(edge_.helperId) +
     edge_.type);
 }

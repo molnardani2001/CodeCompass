@@ -7,6 +7,7 @@
 #include <string>
 
 #include "model/file.h"
+#include <model/microservice.h>
 
 #include "util/hash.h"
 
@@ -44,6 +45,9 @@ struct Chart
 
   #pragma db not_null
   ChartType type;
+
+  #pragma db null
+  MicroserviceId microservice;
 };
 
 inline std::uint64_t createIdentifier(const Chart& chart_)

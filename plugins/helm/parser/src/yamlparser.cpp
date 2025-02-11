@@ -162,7 +162,7 @@ bool YamlParser::parse()
   _ctx.srcMgr.persistFiles();
 
   //--- Collect relations ---/
-  TemplateAnalyzer templateAnalyzer(_ctx, _fileAstCache);
+  TemplateAnalyzer templateAnalyzer(_ctx, _fileAstCache, _templateCache);
   templateAnalyzer.init();
 
   ValueAnalyzer relationCollector(_ctx, _valuesAstCache, templateAnalyzer.getTemplateCounter());
@@ -284,12 +284,20 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
     {
       file->type = model::YamlFile::Type::HELM_TEMPLATE;
 
+      std::string kind = YAML::Dump(loadedFile["kind"]);
+
       _mutex.lock();
       auto it = _fileAstCache.find(file_->path);
       if (it != _fileAstCache.end())
         it->second.push_back(loadedFile);
       else
         _fileAstCache.insert({file_->path, {loadedFile}});
+
+      auto templateCacheIt = _templateCache.find(kind);
+      if (templateCacheIt != _templateCache.end())
+        templateCacheIt->second.emplace_back(file_->path, loadedFile);
+      else
+        _templateCache.insert({kind, {{file_->path, loadedFile}}});
       _mutex.unlock();
     }
 //    else if (file_->filename == "compose.yaml" || file_->filename == "compose.yml"
@@ -326,6 +334,7 @@ void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& load
       subchart.type = model::Chart::ChartType::SUB_CHART;
       subchart.chartId = cc::model::createIdentifier(subchart);
 
+      //mutex usage?
       if (std::find_if(_chartCache.begin(), _chartCache.end(), [&, this](const model::Chart& chart_)
       {
         return chart_.name == subchart.name && chart_.alias == subchart.alias;
@@ -340,6 +349,7 @@ void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& load
 
         edge->id = model::createIdentifier(*edge);
 
+        //mutex usage?
         _chartEdges.push_back(edge);
         _chartCache.push_back(subchart);
       }

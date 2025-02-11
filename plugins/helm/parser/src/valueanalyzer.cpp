@@ -16,7 +16,7 @@ std::unordered_set<model::DependencyEdgeId> ValueAnalyzer::_edgeCache;
 std::vector<model::Microservice> ValueAnalyzer::_microserviceCache;
 std::mutex ValueAnalyzer::_edgeCacheMutex;
 std::vector<model::Service> ValueAnalyzer::_serviceCache;
-std::vector<model::Kafkatopic> ValueAnalyzer::_kafkaTopicCache;
+//std::vector<model::Kafkatopic> ValueAnalyzer::_kafkaTopicCache;
 
 ValueAnalyzer::ValueAnalyzer(
   ParserContext& ctx_,
@@ -37,40 +37,40 @@ ValueAnalyzer::ValueAnalyzer(
     });
   }
 
-  if (_microserviceCache.empty())
-  {
-    util::OdbTransaction{_ctx.db}([this]
-    {
-      for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
-        odb::query<model::Microservice>::type == model::Microservice::ServiceType::INTEGRATION ||
-        odb::query<model::Microservice>::type == model::Microservice::ServiceType::CENTRAL))
-      {
-        _microserviceCache.push_back(service);
-      }
-    });
-  }
+//  if (_microserviceCache.empty())
+//  {
+//    util::OdbTransaction{_ctx.db}([this]
+//    {
+//      for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
+//        odb::query<model::Microservice>::type == model::Microservice::ServiceType::INTEGRATION ||
+//        odb::query<model::Microservice>::type == model::Microservice::ServiceType::CENTRAL))
+//      {
+//        _microserviceCache.push_back(service);
+//      }
+//    });
+//  }
+//
+//  if(_kafkaTopicCache.empty())
+//  {
+//    util::OdbTransaction{_ctx.db}([this]
+//    {
+//      for (const model::Kafkatopic& topic : _ctx.db->query<model::Kafkatopic>())
+//      {
+//        _kafkaTopicCache.push_back(topic);
+//      }
+//    });
+//  }
 
-  if(_kafkaTopicCache.empty())
-  {
-    util::OdbTransaction{_ctx.db}([this]
-    {
-      for (const model::Kafkatopic& topic : _ctx.db->query<model::Kafkatopic>())
-      {
-        _kafkaTopicCache.push_back(topic);
-      }
-    });
-  }
-
-  if(_serviceCache.empty())
-  {
-    util::OdbTransaction{_ctx.db}([this]
-    {
-      for (const model::Service& service : _ctx.db->query<model::Service>())
-      {
-        _serviceCache.push_back(service);
-      }
-    });
-  }
+//  if(_serviceCache.empty())
+//  {
+//    util::OdbTransaction{_ctx.db}([this]
+//    {
+//      for (const model::Service& service : _ctx.db->query<model::Service>())
+//      {
+//        _serviceCache.push_back(service);
+//      }
+//    });
+//  }
 }
 
 ValueAnalyzer::~ValueAnalyzer()
@@ -103,26 +103,26 @@ void ValueAnalyzer::init()
         visitKeyValuePairs(pair.second, *currentService, filePtr);
     });
 
-    for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
-      odb::query<model::Microservice>::type == model::Microservice::ServiceType::PRODUCT))
-    {
-      _microserviceCache.push_back(service);
-    }
+//    for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
+//      odb::query<model::Microservice>::type == model::Microservice::ServiceType::PRODUCT))
+//    {
+//      _microserviceCache.push_back(service);
+//    }
 
-    std::for_each(_fileAstCache.begin(), _fileAstCache.end(),
-      [&, this](std::pair<std::string, YAML::Node> pair)
-      {
-        auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == pair.first);
-        auto currentService = std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
-         [&](model::Microservice& service)
-         {
-           return service.type == model::Microservice::ServiceType::PRODUCT &&
-                  pair.first.find("/charts/") == std::string::npos;
-         });
-
-        if (currentService != _microserviceCache.end())
-          visitKeyValuePairs(pair.second, *currentService, filePtr);
-    });
+//    std::for_each(_fileAstCache.begin(), _fileAstCache.end(),
+//      [&, this](std::pair<std::string, YAML::Node> pair)
+//      {
+//        auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == pair.first);
+//        auto currentService = std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
+//         [&](model::Microservice& service)
+//         {
+//           return service.type == model::Microservice::ServiceType::PRODUCT &&
+//                  pair.first.find("/charts/") == std::string::npos;
+//         });
+//
+//        if (currentService != _microserviceCache.end())
+//          visitKeyValuePairs(pair.second, *currentService, filePtr);
+//    });
   });
 }
 
@@ -153,13 +153,13 @@ bool ValueAnalyzer::visitKeyValuePairs(
 //          _microserviceCache.end(),
 //          [&](const model::Microservice& other)
 //          {
-//            return serviceIter->serviceId == other.serviceId;
+//            return serviceIter->microserviceId == other.microserviceId;
 //          });
 
 //        if ( microserviceIter != _microserviceCache.end())
 //        {
-          model::HelmTemplate helmTemplate = std::move(*findHelmTemplate(serviceIter->helmTemplateId));
-          addEdge(service_.serviceId, serviceIter->depends, helmTemplate.id, "Service");
+//          model::HelmTemplate helmTemplate = std::move(*findHelmTemplate(serviceIter->helmTemplateId));
+//          addEdge(service_.microserviceId, serviceIter->depends, helmTemplate.id, "Service");
 //        }
       }
 
@@ -167,26 +167,26 @@ bool ValueAnalyzer::visitKeyValuePairs(
 //      {
 //        model::HelmTemplate helmTemplate;
 //        helmTemplate.name = "";
-//        helmTemplate.dependencyType = model::HelmTemplate::DependencyType::SERVICE;
-//        helmTemplate.depends = service_.serviceId;
+//        helmTemplate.templateType = model::HelmTemplate::TemplateType::SERVICE;
+//        helmTemplate.depends = service_.microserviceId;
 //        helmTemplate.kind = "Service";
 //        helmTemplate.file = file_->id;
 //        helmTemplate.id = createIdentifier(helmTemplate);
 //        addHelmTemplate(helmTemplate);
 //       }
 
-      auto kafkaTopicIter = std::find_if(_kafkaTopicCache.begin(),
-        _kafkaTopicCache.end(),
-        [&](const model::Kafkatopic& topic)
-        {
-            return currentValue == topic.topicName;
-        });
-
-      if (kafkaTopicIter != _kafkaTopicCache.end())
-      {
-        model::HelmTemplate helmTemplate = std::move(*findHelmTemplate(kafkaTopicIter->helmTemplateId));
-        addEdge(service_.serviceId, kafkaTopicIter->depends, helmTemplate.id, "Kafka-topic");
-      }
+//      auto kafkaTopicIter = std::find_if(_kafkaTopicCache.begin(),
+//        _kafkaTopicCache.end(),
+//        [&](const model::Kafkatopic& topic)
+//        {
+//            return currentValue == topic.topicName;
+//        });
+//
+//      if (kafkaTopicIter != _kafkaTopicCache.end())
+//      {
+//        model::HelmTemplate helmTemplate = std::move(*findHelmTemplate(kafkaTopicIter->helmTemplateId));
+//        addEdge(service_.microserviceId, kafkaTopicIter->depends, helmTemplate.id, "Kafka-topic");
+//      }
     }
   }
 }
@@ -216,9 +216,9 @@ void ValueAnalyzer::addEdge(
   model::DependencyEdgePtr edge = std::make_shared<model::DependencyEdge>();
 
   edge->from = std::make_shared<model::Microservice>();
-  edge->from->serviceId = from_;
+  edge->from->microserviceId = from_;
   edge->to = std::make_shared<model::Microservice>();
-  edge->to->serviceId = to_;
+  edge->to->microserviceId = to_;
 
   edge->connection = std::make_shared<model::HelmTemplate>();
   edge->connection->id = connect_;

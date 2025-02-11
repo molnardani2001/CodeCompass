@@ -4,16 +4,16 @@
 #include <odb/core.hxx>
 #include <odb/lazy-ptr.hxx>
 #include <odb/nullable.hxx>
-
-#include "model/file.h"
-#include "microservice.h"
-
+#include <boost/lexical_cast.hpp>
 #include "util/hash.h"
+#include <model/helmtemplate.h>
 
 namespace cc
 {
 namespace model
 {
+
+typedef uint64_t MSResouceId;
 
 #pragma db object
 struct MSResource
@@ -26,16 +26,19 @@ struct MSResource
   };
 
   #pragma db id auto
-  uint64_t id;
+  MSResouceId id;
 
   #pragma db not_null
   ResourceType type;
 
   #pragma db not_null
-  MicroserviceId service;
+  HelmTemplateId helmTemplateId;
 
   #pragma db not_null
-  float amount;
+  float requestedAmount;
+
+  #pragma db not_null
+  float limitAmount;
 
   #pragma db not_null
   std::string unit;

@@ -19,15 +19,8 @@ typedef std::uint64_t MicroserviceId;
 #pragma db object
 struct Microservice
 {
-  enum class ServiceType
-  {
-    PRODUCT,
-    INTEGRATION,
-    CENTRAL
-  };
-
   #pragma db id
-  MicroserviceId serviceId;
+  MicroserviceId microserviceId;
 
   #pragma db not_null
   std::string name;
@@ -35,10 +28,6 @@ struct Microservice
   std::string version;
 
   FileId file;
-
-  ServiceType type;
-
-  std::uint8_t podCount;
 };
 
 inline std::uint64_t createIdentifier(const Microservice& service_)
