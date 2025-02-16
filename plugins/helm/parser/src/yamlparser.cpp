@@ -272,13 +272,20 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
     {
       file->type = model::YamlFile::Type::HELM_VALUES;
 
-      // If a values.yaml file belongs to a subchart in the chart set,
-      // it should not be parsed since it contains default values
-      // that may provide false results in the microservice architecture
-      // dependency mapping.
-      _mutex.lock();
-      _valuesAstCache.insert({file_->path, loadedFile});
-      _mutex.unlock();
+      fs::path chartPath(file_->path);
+
+      auto parentDir = chartPath.parent_path();
+      bool hasSubcharts = fs::exists(parentDir / "charts") && fs::is_directory(parentDir / "charts");
+
+      // save only, if the values.yaml file is not an integration chart's values.yaml
+      // TODO: extend this logic to handle helm style values.yaml mapping and precedence
+      if(!hasSubcharts)
+      {
+        _mutex.lock();
+        _valuesAstCache.insert({file_->path, loadedFile});
+        _mutex.unlock();
+      }
+
     }
     else if (file_->path.find("templates/") != std::string::npos)
     {

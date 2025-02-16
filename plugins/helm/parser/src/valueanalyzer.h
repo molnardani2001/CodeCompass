@@ -11,10 +11,6 @@
 #include <model/dependencyedge-odb.hxx>
 #include <model/helmtemplate.h>
 #include <model/helmtemplate-odb.hxx>
-//#include <model/kafkatopic.h>
-//#include <model/kafkatopic-odb.hxx>
-//#include <model/service.h>
-//#include <model/service-odb.hxx>
 
 #include <parser/parsercontext.h>
 
@@ -63,14 +59,13 @@ private:
   uint64_t _templateCounter;
 
   static std::vector<model::Microservice> _microserviceCache;
-  model::Microservice _currentService;
 
   static std::vector<model::Service> _serviceCache;
-//  static std::vector<model::Kafkatopic> _kafkaTopicCache;
+  static std::vector<model::KafkaTopic> _kafkaTopicCache;
+  static std::vector<model::Chart> _chartCache;
 
   static std::mutex _edgeCacheMutex;
 
-  //YAML::Node& _loadedFile;
   ParserContext& _ctx;
   std::map<std::string, YAML::Node>& _fileAstCache;
 };

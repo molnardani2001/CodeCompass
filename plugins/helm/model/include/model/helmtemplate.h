@@ -119,8 +119,6 @@ struct ConfigMap : public HelmTemplate {};
 #pragma db object
 struct Secret : public HelmTemplate {};
 
-typedef std::uint64_t KafkaTopicId;
-
 #pragma db object
 struct KafkaTopic : public HelmTemplate
 {
@@ -132,10 +130,7 @@ struct KafkaTopic : public HelmTemplate
 };
 
 #pragma db object
-struct NetworkPolicy : public HelmTemplate
-{
-
-};
+struct NetworkPolicy : public HelmTemplate {};
 }
 }
 

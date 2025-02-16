@@ -88,9 +88,10 @@ private:
 
   std::unordered_set<model::FileId> _fileIdCache;
   std::map<std::string, std::vector<YAML::Node>> _fileAstCache;
-  std::map<std::string, std::vector<std::pair<std::string, YAML::Node>>> _templateCache;
-  //TODO: This also should be std::vector<>
   std::map<std::string, YAML::Node> _valuesAstCache;
+
+  std::map<std::string, YAML::Node> _globalValuesCache;
+  std::map<std::string, std::vector<std::pair<std::string, YAML::Node>>> _templateCache;
   std::unique_ptr<util::JobQueueThreadPool<std::string>> _pool;
   std::atomic<int> _visitedFileCount;
   std::vector<model::YamlAstNodePtr> _astNodes;

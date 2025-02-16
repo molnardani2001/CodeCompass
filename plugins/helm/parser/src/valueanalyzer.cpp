@@ -16,7 +16,8 @@ std::unordered_set<model::DependencyEdgeId> ValueAnalyzer::_edgeCache;
 std::vector<model::Microservice> ValueAnalyzer::_microserviceCache;
 std::mutex ValueAnalyzer::_edgeCacheMutex;
 std::vector<model::Service> ValueAnalyzer::_serviceCache;
-//std::vector<model::Kafkatopic> ValueAnalyzer::_kafkaTopicCache;
+std::vector<model::KafkaTopic> ValueAnalyzer::_kafkaTopicCache;
+std::vector<model::Chart> ValueAnalyzer::_chartCache;
 
 ValueAnalyzer::ValueAnalyzer(
   ParserContext& ctx_,
@@ -37,40 +38,53 @@ ValueAnalyzer::ValueAnalyzer(
     });
   }
 
-//  if (_microserviceCache.empty())
-//  {
-//    util::OdbTransaction{_ctx.db}([this]
-//    {
-//      for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
-//        odb::query<model::Microservice>::type == model::Microservice::ServiceType::INTEGRATION ||
-//        odb::query<model::Microservice>::type == model::Microservice::ServiceType::CENTRAL))
-//      {
-//        _microserviceCache.push_back(service);
-//      }
-//    });
-//  }
-//
-//  if(_kafkaTopicCache.empty())
-//  {
-//    util::OdbTransaction{_ctx.db}([this]
-//    {
-//      for (const model::Kafkatopic& topic : _ctx.db->query<model::Kafkatopic>())
-//      {
-//        _kafkaTopicCache.push_back(topic);
-//      }
-//    });
-//  }
+  // Microservice components
+  if (_microserviceCache.empty())
+  {
+    util::OdbTransaction{_ctx.db}([this]
+    {
+      for (const model::Microservice& service : _ctx.db->query<model::Microservice>())
+      {
+        _microserviceCache.push_back(service);
+      }
+    });
+  }
 
-//  if(_serviceCache.empty())
-//  {
-//    util::OdbTransaction{_ctx.db}([this]
-//    {
-//      for (const model::Service& service : _ctx.db->query<model::Service>())
-//      {
-//        _serviceCache.push_back(service);
-//      }
-//    });
-//  }
+  // Stream-platform connection between microservices is based on kafka-topics
+  if(_kafkaTopicCache.empty())
+  {
+    util::OdbTransaction{_ctx.db}([this]
+    {
+      for (const model::KafkaTopic& topic : _ctx.db->query<model::KafkaTopic>())
+      {
+        _kafkaTopicCache.push_back(topic);
+      }
+    });
+  }
+
+  // On a cluster the hostname is based on service names, any communication between microservices
+  // that uses protocol which needs hostname is based on services
+  if(_serviceCache.empty())
+  {
+    util::OdbTransaction{_ctx.db}([this]
+    {
+      for (const model::Service& service : _ctx.db->query<model::Service>())
+      {
+        _serviceCache.push_back(service);
+      }
+    });
+  }
+
+  if(_chartCache.empty())
+  {
+    util::OdbTransaction{_ctx.db}([this]
+    {
+      for (const model::Chart& chart : _ctx.db->query<model::Chart>())
+      {
+        _chartCache.push_back(chart);
+      }
+    });
+  }
 }
 
 ValueAnalyzer::~ValueAnalyzer()
@@ -92,15 +106,31 @@ void ValueAnalyzer::init()
     [&, this](std::pair<std::string, YAML::Node> pair)
     {
       auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == pair.first);
-      auto currentService = std::find_if(_microserviceCache.begin(),
-        _microserviceCache.end(),
-        [&](model::Microservice& service)
+      filePtr->parent.load();
+      fs::path potentialChartPath1 = fs::path(filePtr->parent->path) / "Chart.yml";
+      fs::path potentialChartPath2 = fs::path(filePtr->parent->path) / "Chart.yaml";
+      auto chartFilePtr = _ctx.db->query_one<model::File>(
+        odb::query<model::File>::path == potentialChartPath1.string() ||
+          odb::query<model::File>::path == potentialChartPath2.string());
+      auto chartIt = std::find_if(
+        _chartCache.begin(),
+        _chartCache.end(),
+        [&](model::Chart& chart)
         {
-          return pair.first.find(service.name) != std::string::npos;
+          return chart.file == chartFilePtr->id;
         });
 
-      if (currentService != _microserviceCache.end())
-        visitKeyValuePairs(pair.second, *currentService, filePtr);
+      if (chartIt != _chartCache.end())
+      {
+        auto microserviceIt = std::find_if(
+          _microserviceCache.begin(),
+          _microserviceCache.end(),
+          [&](model::Microservice& microservice)
+          {
+            return microservice.microserviceId == chartIt->microservice;
+          });
+        visitKeyValuePairs(pair.second, *microserviceIt, filePtr);
+      }
     });
 
 //    for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
@@ -140,53 +170,49 @@ bool ValueAnalyzer::visitKeyValuePairs(
       std::string currentValue(YAML::Dump(it->second));
 
       // If a microservice has another microservice's Service name
-      // in its values.yaml file it means
-      auto serviceIter = std::find_if(_serviceCache.begin(),
+      // in its values.yaml file it means the microservice needs to know
+      // the other microservice's hostname on the Cluster, probably there is a communication between them
+      auto serviceIter = std::find_if(
+        _serviceCache.begin(),
         _serviceCache.end(),
-        [&, this](const model::Service& other) {
+        [&](const model::Service& other) {
           return currentValue == other.name;
       });
 
       if (serviceIter != _serviceCache.end())
       {
-//        auto microserviceIter = std::find_if(_microserviceCache.begin(),
-//          _microserviceCache.end(),
-//          [&](const model::Microservice& other)
-//          {
-//            return serviceIter->microserviceId == other.microserviceId;
-//          });
+        auto otherChartIt = std::find_if(
+        _chartCache.begin(),
+        _chartCache.end(),
+        [&](const model::Chart& chart)
+        {
+          return chart.chartId == serviceIter->depends;
+        });
 
-//        if ( microserviceIter != _microserviceCache.end())
-//        {
-//          model::HelmTemplate helmTemplate = std::move(*findHelmTemplate(serviceIter->helmTemplateId));
-//          addEdge(service_.microserviceId, serviceIter->depends, helmTemplate.id, "Service");
-//        }
+        if (otherChartIt != _chartCache.end() && otherChartIt->microservice != service_.microserviceId)
+          addEdge(service_.microserviceId, otherChartIt->microservice, serviceIter->id, "REST");
       }
 
-//      if (iter != _microserviceCache.end())
-//      {
-//        model::HelmTemplate helmTemplate;
-//        helmTemplate.name = "";
-//        helmTemplate.templateType = model::HelmTemplate::TemplateType::SERVICE;
-//        helmTemplate.depends = service_.microserviceId;
-//        helmTemplate.kind = "Service";
-//        helmTemplate.file = file_->id;
-//        helmTemplate.id = createIdentifier(helmTemplate);
-//        addHelmTemplate(helmTemplate);
-//       }
+      auto kafkaTopicIter = std::find_if(_kafkaTopicCache.begin(),
+        _kafkaTopicCache.end(),
+        [&](const model::KafkaTopic& topic)
+        {
+            return currentValue == topic.topicName;
+        });
 
-//      auto kafkaTopicIter = std::find_if(_kafkaTopicCache.begin(),
-//        _kafkaTopicCache.end(),
-//        [&](const model::Kafkatopic& topic)
-//        {
-//            return currentValue == topic.topicName;
-//        });
-//
-//      if (kafkaTopicIter != _kafkaTopicCache.end())
-//      {
-//        model::HelmTemplate helmTemplate = std::move(*findHelmTemplate(kafkaTopicIter->helmTemplateId));
-//        addEdge(service_.microserviceId, kafkaTopicIter->depends, helmTemplate.id, "Kafka-topic");
-//      }
+      if (kafkaTopicIter != _kafkaTopicCache.end())
+      {
+        auto otherChartIt = std::find_if(
+        _chartCache.begin(),
+        _chartCache.end(),
+        [&](const model::Chart& chart)
+        {
+          return chart.chartId == kafkaTopicIter->depends;
+        });
+
+        if (otherChartIt != _chartCache.end() && otherChartIt->microservice != service_.microserviceId)
+          addEdge(service_.microserviceId, otherChartIt->microservice, kafkaTopicIter->id, "STREAMING");
+      }
     }
   }
 }
