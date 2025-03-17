@@ -144,6 +144,12 @@ void TemplateAnalyzer::fillWorkloadHandlers()
     {
       this->processDaemonSet(workload_, node_);
     };
+
+  _workloadHandlers["Pod"] =
+    [this](std::unique_ptr<model::Workload>& workload_, const YAML::Node& node_)
+    {
+      LOG(warning) << "Pod found, not handling " << workload_->name;
+    };
 }
 
 TemplateAnalyzer::~TemplateAnalyzer()
@@ -349,7 +355,7 @@ void TemplateAnalyzer::processWorkloads(
         processTemplateCommonProperties(*workload, pair);
 
         workload->labels = "";
-        if(pair.second["spec"]["template"]["metadata"]["labels"])
+        if(isKeyExists(pair.second, "spec.template.metadata.labels"))
         {
           auto labelNode = pair.second["spec"]["template"]["metadata"]["labels"];
           for(auto it = labelNode.begin(); it != labelNode.end(); ++it)
@@ -364,7 +370,7 @@ void TemplateAnalyzer::processWorkloads(
 
         workload->images = "";
         workload->ports="";
-        if(pair.second["spec"]["template"]["spec"]["containers"] &&
+        if(isKeyExists(pair.second,"spec.template.spec.containers") &&
            pair.second["spec"]["template"]["spec"]["containers"].IsSequence() &&
            pair.second["spec"]["template"]["spec"]["containers"].size() > 0)
         {
@@ -522,7 +528,7 @@ void TemplateAnalyzer::processDeployment(
   deployment->depends = workload_->depends;
 
   deployment->replicas = 1;
-  if (node_["spec"]["replicas"] && node_["spec"]["replicas"].IsScalar())
+  if (isKeyExists(node_,"spec.replicas") && node_["spec"]["replicas"].IsScalar())
     deployment->replicas = node_["spec"]["replicas"].as<int32_t>();
 
   workload_ = std::move(deployment);
@@ -545,7 +551,7 @@ void TemplateAnalyzer::processStatefulSet(
   statefulSet->depends = workload_->depends;
 
   statefulSet->replicas = 1;
-  if (node_["spec"]["replicas"] && node_["spec"]["replicas"].IsScalar())
+  if (isKeyExists(node_,"spec.replicas") && node_["spec"]["replicas"].IsScalar())
     statefulSet->replicas = node_["spec"]["replicas"].as<int32_t>();
 
   processStorageResources(node_, *statefulSet);
@@ -571,14 +577,9 @@ void TemplateAnalyzer::processDaemonSet(
 
   daemonSet->tolerations = "";
   daemonSet->nodeSelector = "";
-  if(node_["spec"] &&
-     node_["spec"].IsDefined() &&
-     node_["spec"]["template"] &&
-     node_["spec"]["template"].IsDefined() &&
-     node_["spec"]["template"]["spec"] &&
-     node_["spec"]["template"]["spec"].IsDefined())
+  if(isKeyExists(node_, "spec.template.spec"))
   {
-    if(node_["spec"]["template"]["spec"]["tolerations"] &&
+    if(isKeyExists(node_,"spec.template.spec.tolerations") &&
        node_["spec"]["template"]["spec"]["tolerations"].IsDefined())
     {
       YAML::Node tolerationsNode = node_["spec"]["template"]["spec"]["tolerations"];
@@ -598,7 +599,7 @@ void TemplateAnalyzer::processDaemonSet(
       daemonSet->tolerations.pop_back();
     }
 
-    if(node_["spec"]["template"]["spec"]["nodeSelector"] &&
+    if(isKeyExists(node_,"spec.template.spec.nodeSelector") &&
        node_["spec"]["template"]["spec"]["nodeSelector"].IsDefined())
     {
       YAML::Node nodeSelectorNode = node_["spec"]["template"]["spec"]["nodeSelector"];
@@ -636,19 +637,19 @@ void TemplateAnalyzer::processServices(const std::vector<std::pair<std::string, 
         service.id = model::createIdentifier(service);
 
         service.type = "ClusterIP"; // default if not provided
-        if(pair.second["spec"]["type"])
+        if(isKeyExists(pair.second,"spec.type"))
         {
           service.type = YAML::Dump(pair.second["spec"]["type"]);
         }
 
         service.ipFamilyPolicy = "SingleStack"; // default if not provided
-        if(pair.second["spec"]["ipFamilyPolicy"])
+        if(isKeyExists(pair.second,"spec.ipFamilyPolicy"))
         {
           service.ipFamilyPolicy = YAML::Dump(pair.second["spec"]["ipFamilyPolicy"]);
         }
 
         service.ports = "";
-        if(pair.second["spec"]["ports"] &&
+        if(isKeyExists(pair.second,"spec.ports") &&
            pair.second["spec"]["ports"].IsSequence())
         {
           auto portsNode = pair.second["spec"]["ports"];
@@ -667,7 +668,7 @@ void TemplateAnalyzer::processServices(const std::vector<std::pair<std::string, 
           service.ports.pop_back();
         }
 
-        if (pair.second["spec"]["selector"] &&
+        if (isKeyExists(pair.second,"spec.selector") &&
             pair.second["spec"]["selector"].IsMap())
         {
           std::vector<std::string> selectors;
@@ -1013,11 +1014,11 @@ void TemplateAnalyzer::processKafkaTopics(
         kafkaTopic.kind = YAML::Dump(pair.second["kind"]);
         kafkaTopic.name = YAML::Dump(pair.second["metadata"]["name"]);
         kafkaTopic.topicName = YAML::Dump(pair.second["spec"]["topicName"]);
-        if (pair.second["spec"]["replicas"] && pair.second["spec"]["replicas"].IsScalar())
+        if (isKeyExists(pair.second,"spec.replicas") && pair.second["spec"]["replicas"].IsScalar())
           kafkaTopic.replicaCount = pair.second["spec"]["replicas"].as<uint64_t>();
         else
           kafkaTopic.replicaCount = 1;
-        if (pair.second["spec"]["partitions"] && pair.second["spec"]["partitions"].IsScalar())
+        if (isKeyExists(pair.second,"spec.partitions") && pair.second["spec"]["partitions"].IsScalar())
           kafkaTopic.partitionCount = pair.second["spec"]["partitions"].as<uint64_t>();
         else
           kafkaTopic.partitionCount = 1;
@@ -1055,6 +1056,27 @@ model::Chart TemplateAnalyzer::findParentChart(const std::string& templatePath_)
   return parentChart;
 }
 
+bool TemplateAnalyzer::isKeyExists(const YAML::Node& node, const std::string& path) {
+  std::vector<std::string> keys;
+  size_t start = 0;
+  size_t end;
+  while ((end = path.find('.', start)) != std::string::npos) {
+    keys.push_back(path.substr(start, end - start));
+    start = end + 1;
+  }
+  keys.push_back(path.substr(start));
+
+  const YAML::Node* current = &node;
+  for (const auto& key : keys) {
+    auto found = (*current)[key];
+    if (!found || !found.IsDefined()) {
+      return false;
+    }
+    current = &found;
+  }
+  return true;
+}
+
 void TemplateAnalyzer::processResources(
   YAML::Node& node_,
   model::Workload& workload_)
@@ -1067,8 +1089,7 @@ void TemplateAnalyzer::processResources(
     resourceKeys.end(),
     [&,this](const YAML::Node& resourceKey)
     {
-      if(resourceKey["requests"] &&
-         resourceKey["requests"].IsDefined())
+      if(isKeyExists(resourceKey,"requests"))
       {
         for(auto it = resourceKey["requests"].begin(); it != resourceKey["requests"].end(); ++it)
         {
@@ -1084,8 +1105,7 @@ void TemplateAnalyzer::processResources(
           resource.requestedAmount = convertedAmount.first;
           resource.unit = convertedAmount.second;
 
-          if(resourceKey["limits"] &&
-             resourceKey["limits"].IsDefined() &&
+          if(isKeyExists(resourceKey, "limits") &&
              resourceKey["limits"][it->first] &&
             resourceKey["limits"][it->first].IsDefined())
           {

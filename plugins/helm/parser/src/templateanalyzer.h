@@ -15,10 +15,6 @@
 #include <model/helmtemplate-odb.hxx>
 #include <model/helmtemplatedependencyedge.h>
 #include <model/helmtemplatedependencyedge-odb.hxx>
-//#include <model/kafkatopic.h>
-//#include <model/kafkatopic-odb.hxx>
-//#include <model/service.h>
-//#include <model/service-odb.hxx>
 
 #include <parser/parsercontext.h>
 
@@ -39,6 +35,8 @@ public:
 
   void init();
   uint64_t getTemplateCounter() { return templateCounter; }
+
+  friend class YamlParser;
 
 private:
   bool visitKeyValuePairs(
@@ -144,17 +142,21 @@ private:
     std::string amount_,
     model::MSResource::ResourceType type_);
 
-  YAML::Node findKey(
+  static YAML::Node findKey(
     const std::string& key_,
     const YAML::Node& currentFile_);
 
-  std::vector<YAML::Node> findKeys(
+  static std::vector<YAML::Node> findKeys(
     const std::string& key_,
     std::vector<YAML::Node>& nodes_,
     YAML::Node& node_);
 
   static model::Chart findParentChart(
     const std::string& templatePath_);
+
+  static bool isKeyExists(
+    const YAML::Node& node,
+    const std::string& path);
 
   std::map<std::string, model::HelmTemplate::TemplateType> _dependencyPairs;
   std::map<std::string, model::MSResource::ResourceType> _msResourcePairs;

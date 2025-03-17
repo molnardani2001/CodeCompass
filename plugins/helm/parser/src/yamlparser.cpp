@@ -272,17 +272,33 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
     {
       file->type = model::YamlFile::Type::HELM_VALUES;
 
-      fs::path chartPath(file_->path);
+      fs::path valuesPath(file_->path);
 
-      auto parentDir = chartPath.parent_path();
+      auto parentDir = valuesPath.parent_path();
       bool hasSubcharts = fs::exists(parentDir / "charts") && fs::is_directory(parentDir / "charts");
+      bool isSubchart = file_->path.find("charts/") != std::string::npos;
 
-      // save only, if the values.yaml file is not an integration chart's values.yaml
-      // TODO: extend this logic to handle helm style values.yaml mapping and precedence
+      // TODO: it would be much nicer if the full path of site_values.yaml could come as command line argument
+      if(fs::exists(parentDir / "site_values.yaml") || !isSubchart)
+      {
+        YAML::Node siteValues = YAML::LoadFile((parentDir / "site_values.yaml").string());
+        mergeNodes(siteValues, loadedFile);
+      }
+
       if(!hasSubcharts)
       {
+        if(isSubchart)
+        {
+          mergeIntegrationValues(valuesPath, loadedFile);
+        }
+
         _mutex.lock();
         _valuesAstCache.insert({file_->path, loadedFile});
+        _mutex.unlock();
+      } else
+      {
+        _mutex.lock();
+        _integrationValuesCache.insert({file_->path, loadedFile});
         _mutex.unlock();
       }
 
@@ -362,6 +378,112 @@ void YamlParser::processIntegrationChart(model::FilePtr& file_, YAML::Node& load
       }
     }
   });
+}
+
+void YamlParser::mergeIntegrationValues(const fs::path& path_, YAML::Node& values)
+{
+  // intent to find parent chart's values.yaml path
+  fs::path parentChartValuesPath = path_ // full path to child chart values.yaml
+                                    .parent_path() // <chart-name> folder
+                                    .parent_path() // charts/ folder
+                                    .parent_path() // <parent-chart> folder
+                                    / "values.yaml";
+
+  // name of the child chart
+  std::string childChartName = path_ // full path to child chart values.yaml
+                               .parent_path() // <chart-name> folder
+                               .filename()
+                               .string();
+
+  // collecting chart name entries both in collection and '.' separated string to be able to get keys conveniently
+  std::string chartNameEntriesAsString = childChartName;
+  std::deque<std::string> chartNameEntries;
+  // order here is important
+  chartNameEntries.push_front(childChartName);
+
+  // loop through all parent chart's values.yaml files and looking for values
+  // which are overriding/adding extra values to child chart values.yaml
+  while(fs::exists(parentChartValuesPath))
+  {
+    auto parentValuesIt = _integrationValuesCache.find(parentChartValuesPath.string());
+    if(parentValuesIt != _integrationValuesCache.end())
+    {
+      // in every values.yaml searching for the child chart name
+      if(TemplateAnalyzer::isKeyExists(parentValuesIt->second, chartNameEntriesAsString))
+      {
+        auto chartNode = getChildNode(parentValuesIt->second, chartNameEntries);
+
+        // merging values from higher values.yaml
+        for(const auto& child : chartNode)
+        {
+          YAML::Node childNode;
+          std::string key = child.first.as<std::string>();
+          childNode[key] = child.second;
+          mergeNodes(childNode, values);
+        }
+
+        // global is a specific keyword, every subchart gets parent chart's global values merged to their own values
+        auto globalNode = getChildNode(parentValuesIt->second, {"global"});
+        if(globalNode && globalNode.IsDefined())
+        {
+          YAML::Node tmpGlobalNode;
+          std::string globalKey = "global";
+          tmpGlobalNode[globalKey] = globalNode;
+          mergeNodes(tmpGlobalNode, values);
+        }
+      }
+    }
+
+    // for next iteration
+    std::string parentChartName  = parentChartValuesPath
+                        .parent_path()
+                        .filename()
+                        .string();
+    chartNameEntries.push_front(parentChartName);
+    chartNameEntriesAsString = parentChartName.append(".").append(chartNameEntriesAsString);
+    parentChartValuesPath = parentChartValuesPath
+                              .parent_path() // <parent-chart-name> folder
+                              .parent_path() // charts/ folder
+                              .parent_path() // <parent-parent-chart-name> folder
+                              / "values.yaml";
+  }
+}
+
+void YamlParser::mergeNodes(const YAML::Node& source_, YAML::Node& target_)
+{
+  if(!source_.IsMap())
+  {
+    target_ = source_;
+    return;
+  }
+
+  for (const auto& pair : source_)
+  {
+    const std::string& key = pair.first.as<std::string>();
+    const YAML::Node& srcValue = pair.second;
+    if (target_[key] &&
+        target_[key].IsDefined() &&
+        target_[key].IsMap() &&
+        srcValue.IsMap())
+    {
+      auto v = target_[key];
+      mergeNodes(srcValue, v);
+    } else
+    {
+      target_[key] = srcValue;
+    }
+  }
+}
+
+YAML::Node YamlParser::getChildNode(const YAML::Node& node_, const std::deque<std::string>& keys_)
+{
+  const YAML::Node* current = &node_;
+  for(const auto& key : keys_)
+  {
+    auto tmp = (*current)[key];
+    current = &tmp;
+  }
+  return *current;
 }
 
 void YamlParser::processRootKeys(model::FilePtr& file_, YAML::Node& loadedFile)

@@ -39,6 +39,24 @@ private:
     model::Chart& chart);
 
   /**
+   * The purpose of this function is to implement the functionality of helm values management.
+   * When there is an integration chart, then its values.yaml can (and usually does) overwriting/adding lobal
+   * values for children charts. There are 2 specific rules:
+   * - an integration chart's `global` values is going to be passed down to the child chart values
+   *   (even if child chart has `global` in its own values, parent's will overwrite it/merge with them,
+   *   keeping higher precedence on parent's values)
+   * - if an integration chart's values.yaml contains the name of its subchart on the first-level in YAML definition,
+   *   then the values under that entry will overwrite/be added to the child chart's values.yaml
+   *
+   * @param path_ Full path to child chart values.yaml
+   * @param values Child chart's values.yaml as YAML::Node
+   */
+  void mergeIntegrationValues(
+    const boost::filesystem::path& path_,
+    YAML::Node& values
+    );
+
+  /**
    * The first-level keys in a YAML files usually have great significance,
    * so they should be collected in a separate collection.
    * @param file_
@@ -78,6 +96,14 @@ private:
 
   model::Range getNodeLocation(YAML::Node& node_);
 
+  static YAML::Node getChildNode(
+    const YAML::Node& node_,
+    const std::deque<std::string>& keys_);
+
+  static void mergeNodes(
+    const YAML::Node& source_,
+    YAML::Node& target_);
+
   /**
    * A method to recursively traverse the input directory and
    * find YAML files.
@@ -89,6 +115,7 @@ private:
   std::unordered_set<model::FileId> _fileIdCache;
   std::map<std::string, std::vector<YAML::Node>> _fileAstCache;
   std::map<std::string, YAML::Node> _valuesAstCache;
+  std::map<std::string, YAML::Node> _integrationValuesCache;
 
   std::map<std::string, YAML::Node> _globalValuesCache;
   std::map<std::string, std::vector<std::pair<std::string, YAML::Node>>> _templateCache;
