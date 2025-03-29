@@ -30,6 +30,7 @@ struct HelmTemplate
     CONFIGMAP,
     SECRET,
     KAFKATOPIC,
+    KAFKAUSER,
     STATEFULSET,
     DAEMONSET,
     POD,
@@ -127,6 +128,14 @@ struct KafkaTopic : public HelmTemplate
   std::uint64_t replicaCount;
 
   std::uint64_t partitionCount;
+};
+
+#pragma db object
+struct KafkaUser : public HelmTemplate
+{
+  std::string consumeTopics;
+
+  std::string produceTopics;
 };
 
 #pragma db object

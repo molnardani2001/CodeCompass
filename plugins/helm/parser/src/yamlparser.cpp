@@ -279,7 +279,7 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
       bool isSubchart = file_->path.find("charts/") != std::string::npos;
 
       // TODO: it would be much nicer if the full path of site_values.yaml could come as command line argument
-      if(fs::exists(parentDir / "site_values.yaml") || !isSubchart)
+      if(!isSubchart && fs::exists(parentDir / "site_values.yaml"))
       {
         YAML::Node siteValues = YAML::LoadFile((parentDir / "site_values.yaml").string());
         mergeNodes(siteValues, loadedFile);
@@ -307,22 +307,26 @@ void YamlParser::processFileType(model::FilePtr& file_, YAML::Node& loadedFile)
     {
       file->type = model::YamlFile::Type::HELM_TEMPLATE;
 
-      std::string kind = YAML::Dump(loadedFile["kind"]);
+      if(TemplateAnalyzer::isKeyExists(loadedFile, "kind"))
+      {
+        std::string kind = YAML::Dump(loadedFile["kind"]);
 
-      _mutex.lock();
-      auto it = _fileAstCache.find(file_->path);
-      if (it != _fileAstCache.end())
-        it->second.push_back(loadedFile);
-      else
-        _fileAstCache.insert({file_->path, {loadedFile}});
+        _mutex.lock();
+        auto it = _fileAstCache.find(file_->path);
+        if (it != _fileAstCache.end())
+          it->second.push_back(loadedFile);
+        else
+          _fileAstCache.insert({file_->path, {loadedFile}});
 
-      auto templateCacheIt = _templateCache.find(kind);
-      if (templateCacheIt != _templateCache.end())
-        templateCacheIt->second.emplace_back(file_->path, loadedFile);
-      else
-        _templateCache.insert({kind, {{file_->path, loadedFile}}});
-      _mutex.unlock();
+        auto templateCacheIt = _templateCache.find(kind);
+        if (templateCacheIt != _templateCache.end())
+          templateCacheIt->second.emplace_back(file_->path, loadedFile);
+        else
+          _templateCache.insert({kind, {{file_->path, loadedFile}}});
+        _mutex.unlock();
+      }
     }
+// NOT REAL HELM CHART COMPONENTS:
 //    else if (file_->filename == "compose.yaml" || file_->filename == "compose.yml"
 //          || file_->filename == "docker-compose.yaml" || file_->filename == "docker-compose.yml")
 //      file->type = model::YamlFile::Type::DOCKER_COMPOSE;

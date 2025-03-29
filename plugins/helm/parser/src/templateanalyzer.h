@@ -119,6 +119,9 @@ private:
   void processStatefulSet(
     std::unique_ptr<model::Workload>& workload_, const YAML::Node& node_);
 
+  void processKafkaUsers(
+    const std::vector<std::pair<std::string, YAML::Node>>& kafkaUsers_);
+
   void addHelmTemplate(model::HelmTemplate& helmTemplate_);
 
   void addEdge(

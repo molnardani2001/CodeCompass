@@ -62,6 +62,7 @@ private:
 
   static std::vector<model::Service> _serviceCache;
   static std::vector<model::KafkaTopic> _kafkaTopicCache;
+  static std::vector<model::KafkaUser> _kafkaUserCache;
   static std::vector<model::Chart> _chartCache;
 
   static std::mutex _edgeCacheMutex;

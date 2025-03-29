@@ -123,6 +123,14 @@ void TemplateAnalyzer::fillHelmTemplateHandlers()
     {
       this->processKafkaTopics(kafkatopics_);
     });
+
+  _helmTemplateHandlers.emplace_back(
+    "KafkaUser",
+    [this](const std::vector<std::pair<std::string, YAML::Node>>& kafkaUsers_)
+    {
+      this->processKafkaUsers(kafkaUsers_);
+    }
+    );
 }
 
 void TemplateAnalyzer::fillWorkloadHandlers()
@@ -625,16 +633,9 @@ void TemplateAnalyzer::processServices(const std::vector<std::pair<std::string, 
     std::for_each(services_.begin(), services_.end(),
       [&](const std::pair<std::string, YAML::Node>& pair)
       {
-        auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == pair.first);
         // service as a K8s resource, not microservice
         model::Service service;
-
-        service.name = YAML::Dump(pair.second["metadata"]["name"]);
-        service.kind = "Service";
-        service.templateType = model::HelmTemplate::TemplateType::SERVICE;
-        service.file = filePtr->id;
-
-        service.id = model::createIdentifier(service);
+        processTemplateCommonProperties(service, pair);
 
         service.type = "ClusterIP"; // default if not provided
         if(isKeyExists(pair.second,"spec.type"))
@@ -1008,11 +1009,7 @@ void TemplateAnalyzer::processKafkaTopics(
       [&,this](const std::pair<std::string, YAML::Node>& pair)
       {
         model::KafkaTopic kafkaTopic;
-        kafkaTopic.templateType = model::HelmTemplate::TemplateType::KAFKATOPIC;
-        auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == pair.first);
-        kafkaTopic.file = filePtr->id;
-        kafkaTopic.kind = YAML::Dump(pair.second["kind"]);
-        kafkaTopic.name = YAML::Dump(pair.second["metadata"]["name"]);
+        processTemplateCommonProperties(kafkaTopic, pair);
         kafkaTopic.topicName = YAML::Dump(pair.second["spec"]["topicName"]);
         if (isKeyExists(pair.second,"spec.replicas") && pair.second["spec"]["replicas"].IsScalar())
           kafkaTopic.replicaCount = pair.second["spec"]["replicas"].as<uint64_t>();
@@ -1023,20 +1020,81 @@ void TemplateAnalyzer::processKafkaTopics(
         else
           kafkaTopic.partitionCount = 1;
 
-        kafkaTopic.id = createIdentifier(kafkaTopic);
-
-        model::Chart dependsOnChart = findParentChart(pair.first);
-
-        kafkaTopic.depends = dependsOnChart.chartId;
-
         addHelmTemplate(kafkaTopic);
+      });
+  });
+}
+
+void TemplateAnalyzer::processKafkaUsers(const std::vector<std::pair<std::string, YAML::Node>>& kafkaUsers_)
+{
+  util::OdbTransaction(_ctx.db)([&,this]
+  {
+    std::for_each(kafkaUsers_.begin(), kafkaUsers_.end(),
+      [&,this](const std::pair<std::string, YAML::Node>& pair)
+      {
+        model::KafkaUser kafkaUser;
+        processTemplateCommonProperties(kafkaUser,pair);
+        kafkaUser.produceTopics = "";
+        kafkaUser.consumeTopics = "";
+
+        if(isKeyExists(pair.second, "spec.authorization.acls"))
+        {
+          for(auto accessControl : pair.second["spec"]["authorization"]["acls"])
+          {
+            //investigate only if explicit topic name is present in the configuration
+            if(isKeyExists(accessControl, "resource.type") &&
+               "topic" == accessControl["resource"]["type"].as<std::string>() &&
+              isKeyExists(accessControl, "resource.name") &&
+              "\"*\"" != YAML::Dump(accessControl["resource"]["name"]))
+            {
+              if(isKeyExists(accessControl, "operations"))
+              {
+                for(auto operation : accessControl["operations"])
+                {
+                  std::string op = YAML::Dump(operation);
+                  if("Write" == op)
+                  {
+                    std::string patternType = YAML::Dump(accessControl["resource"]["patternType"]);
+                    std::string topic = YAML::Dump(accessControl["resource"]["name"]);
+                    kafkaUser.produceTopics.append(patternType).append(":").append(topic).append(";");
+                  } else if("Read" == op)
+                  {
+                    std::string patternType = YAML::Dump(accessControl["resource"]["patternType"]);
+                    std::string topic = YAML::Dump(accessControl["resource"]["name"]);
+                    kafkaUser.consumeTopics.append(patternType).append(":").append(topic).append(";");
+                  }
+                }
+              } else if (isKeyExists(accessControl, "operation"))
+              {
+                std::string op = YAML::Dump(accessControl["operation"]);
+                if("Write" == op)
+                {
+                  std::string patternType = YAML::Dump(accessControl["resource"]["patternType"]);
+                  std::string topic = YAML::Dump(accessControl["resource"]["name"]);
+                  kafkaUser.produceTopics.append(patternType).append(":").append(topic).append(";");
+                } else if("Read" == op)
+                {
+                  std::string patternType = YAML::Dump(accessControl["resource"]["patternType"]);
+                  std::string topic = YAML::Dump(accessControl["resource"]["name"]);
+                  kafkaUser.consumeTopics.append(patternType).append(":").append(topic).append(";");
+                }
+              }
+            }
+          }
+          if(!kafkaUser.consumeTopics.empty())
+            kafkaUser.consumeTopics.pop_back();
+          if(!kafkaUser.produceTopics.empty())
+            kafkaUser.produceTopics.pop_back();
+        }
+
+        addHelmTemplate(kafkaUser);
       });
   });
 }
 
 model::Chart TemplateAnalyzer::findParentChart(const std::string& templatePath_)
 {
-  size_t max_index = std::string::npos; // Kezdetben nincs találat
+  size_t max_index = std::string::npos;
   model::Chart parentChart;
 
   for (const auto& chart : _chartCache)
@@ -1328,6 +1386,7 @@ void TemplateAnalyzer::fillDependencyPairsMap()
   _dependencyPairs.insert({"DaemonSet", model::HelmTemplate::TemplateType::DAEMONSET});
   _dependencyPairs.insert({"Pod", model::HelmTemplate::TemplateType::POD});
   _dependencyPairs.insert({"KafkaTopic", model::HelmTemplate::TemplateType::KAFKATOPIC});
+  _dependencyPairs.insert({"KafkaUser", model::HelmTemplate::TemplateType::KAFKAUSER});
 }
 
 void TemplateAnalyzer::fillResourceTypePairsMap()

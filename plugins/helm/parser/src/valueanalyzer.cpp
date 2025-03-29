@@ -17,6 +17,7 @@ std::vector<model::Microservice> ValueAnalyzer::_microserviceCache;
 std::mutex ValueAnalyzer::_edgeCacheMutex;
 std::vector<model::Service> ValueAnalyzer::_serviceCache;
 std::vector<model::KafkaTopic> ValueAnalyzer::_kafkaTopicCache;
+std::vector<model::KafkaUser> ValueAnalyzer::_kafkaUserCache;
 std::vector<model::Chart> ValueAnalyzer::_chartCache;
 
 ValueAnalyzer::ValueAnalyzer(
@@ -50,7 +51,7 @@ ValueAnalyzer::ValueAnalyzer(
     });
   }
 
-  // Stream-platform connection between microservices is based on kafka-topics
+  // Stream-platform connection between microservices is based on kafka-topics and kafka-users
   if(_kafkaTopicCache.empty())
   {
     util::OdbTransaction{_ctx.db}([this]
@@ -58,6 +59,16 @@ ValueAnalyzer::ValueAnalyzer(
       for (const model::KafkaTopic& topic : _ctx.db->query<model::KafkaTopic>())
       {
         _kafkaTopicCache.push_back(topic);
+      }
+    });
+  }
+
+  if(_kafkaUserCache.empty())
+  {
+    util::OdbTransaction{_ctx.db}([this]{
+      for(const model::KafkaUser& kafkaUser : _ctx.db->query<model::KafkaUser>())
+      {
+        _kafkaUserCache.push_back(kafkaUser);
       }
     });
   }
@@ -210,7 +221,8 @@ bool ValueAnalyzer::visitKeyValuePairs(
           return chart.chartId == kafkaTopicIter->depends;
         });
 
-        if (otherChartIt != _chartCache.end() && otherChartIt->microservice != service_.microserviceId)
+        if (otherChartIt != _chartCache.end())
+          //TODO: better relationship detection possible
           addEdge(service_.microserviceId, otherChartIt->microservice, kafkaTopicIter->id, "STREAMING");
       }
     }
