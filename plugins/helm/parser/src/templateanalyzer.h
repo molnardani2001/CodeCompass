@@ -39,43 +39,6 @@ public:
   friend class YamlParser;
 
 private:
-  bool visitKeyValuePairs(
-    std::string path_,
-    YAML::Node& currentFile_,
-    model::Microservice& service_);
-
-  /**
-   *
-   * @param path_ The currently processed file path.
-   * @param currentFile_ The currently processed file as a YAML node.
-   * @param service_ The microservice in which the file is defined.
-   */
-  void processServiceDeps(
-    const std::string& path_,
-    YAML::Node& currentFile_,
-    model::Microservice& service_);
-
-  /**
-   *
-   * @param path_ The currently processed file path.
-   * @param currentFile_ The currently processed file as a YAML node.
-   * @param service_ The microservice in which the file is defined.
-   */
-  void processMountDeps(
-    const std::string& path_,
-    YAML::Node& currentFile_,
-    model::Microservice& service_);
-
-  /**
-   *
-   * @param path_ The currently processed file path.
-   * @param currentFile_ The currently processed file as a YAML node.
-   * @param service_ The microservice in which the file is defined.
-   */
-  void processCertificateDeps(
-    const std::string& path_,
-    YAML::Node& currentFile_,
-    model::Microservice& service_);
 
   void processResources(
     YAML::Node& node_,
@@ -154,7 +117,7 @@ private:
     std::vector<YAML::Node>& nodes_,
     YAML::Node& node_);
 
-  static model::Chart findParentChart(
+  model::ChartId findParentChart(
     const std::string& templatePath_);
 
   static bool isKeyExists(
@@ -182,8 +145,6 @@ private:
   static std::vector<model::Microservice> _microserviceCache;
   static std::vector<model::Chart> _chartCache;
 
-  //static std::vector<model::Kafkatopic> _kafkaTopicCache;
-  //static std::vector<model::Service> _serviceCache;
   static std::vector<model::HelmTemplate> _helmTemplateCache;
 
   std::vector<model::MSResource> _msResources;

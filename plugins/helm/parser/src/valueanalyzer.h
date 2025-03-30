@@ -39,10 +39,13 @@ private:
   std::shared_ptr<model::HelmTemplate> findHelmTemplate(
       model::HelmTemplateId helmTemplateId);
 
+  void addHelmTemplate(
+    model::HelmTemplate& helmTemplate_);
+
   void addEdge(
-    const model::MicroserviceId& from_,
-    const model::MicroserviceId& to_,
-    const model::HelmTemplateId& connect_,
+    model::MicroserviceId from_,
+    model::MicroserviceId to_,
+    model::HelmTemplateId connect_,
     std::string type_);
 
   bool visitKeyValuePairs(
@@ -50,8 +53,14 @@ private:
     model::Microservice& service_,
     const model::FilePtr& file_);
 
-  void addHelmTemplate(
-    model::HelmTemplate& helmTemplate_);
+  static void processKafkaUserTopics(
+    const std::string& topics, model::MicroserviceId microserviceId, int actor);
+
+  static bool startsWith(
+    const std::string& str, const std::string& prefix);
+
+  static bool isValuePossibleHostname(
+    const std::string& value, const std::string& serviceName);
 
   static std::unordered_set<model::DependencyEdgeId> _edgeCache;
   std::vector<model::DependencyEdgePtr> _newEdges;
@@ -62,8 +71,14 @@ private:
 
   static std::vector<model::Service> _serviceCache;
   static std::vector<model::KafkaTopic> _kafkaTopicCache;
-  static std::vector<model::KafkaUser> _kafkaUserCache;
   static std::vector<model::Chart> _chartCache;
+
+  static std::map<
+    model::HelmTemplateId, // id of kafka topic helm template
+    std::pair<
+      std::vector<model::MicroserviceId>, // consumer microservices for a topic (map-key)
+      std::vector<model::MicroserviceId>> // producer microservices for a topic (map-key)
+    > _kafkaRelations;
 
   static std::mutex _edgeCacheMutex;
 

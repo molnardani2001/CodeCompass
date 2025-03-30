@@ -1,5 +1,3 @@
-#include <iterator>
-#include <fstream>
 #include <memory>
 #include <functional>
 #include <regex>
@@ -22,7 +20,6 @@
 #include <model/file-odb.hxx>
 
 #include <model/microservice.h>
-#include <model/microservice-odb.hxx>
 #include <model/yamlfile.h>
 #include <model/yamlfile-odb.hxx>
 #include <model/yamlcontent.h>
@@ -30,7 +27,6 @@
 #include <model/yamlastnode.h>
 #include <model/yamlastnode-odb.hxx>
 #include <model/chart.h>
-#include <model/chart-odb.hxx>
 #include <model/chartdependencyedge.h>
 #include <model/chartdependencyedge-odb.hxx>
 

@@ -1,5 +1,6 @@
 #include <parser/sourcemanager.h>
 #include <util/odbtransaction.h>
+#include <boost/filesystem.hpp>
 
 #include "templateanalyzer.h"
 
@@ -8,14 +9,14 @@ namespace cc
 namespace parser
 {
 
+namespace fs = boost::filesystem;
+
 std::unordered_set<model::DependencyEdgeId> TemplateAnalyzer::_edgeCache;
 std::unordered_set<model::HelmTemplateDependencyEdgeId> TemplateAnalyzer::_helmTemplateEdgeCache;
 std::vector<model::Chart> TemplateAnalyzer::_chartCache;
 
 std::vector<model::Microservice> TemplateAnalyzer::_microserviceCache;
 std::mutex TemplateAnalyzer::_edgeCacheMutex;
-//std::vector<model::Kafkatopic> TemplateAnalyzer::_kafkaTopicCache;
-//std::vector<model::Service> TemplateAnalyzer::_serviceCache;
 std::vector<model::HelmTemplate> TemplateAnalyzer::_helmTemplateCache;
 
 TemplateAnalyzer::TemplateAnalyzer(
@@ -73,7 +74,6 @@ TemplateAnalyzer::TemplateAnalyzer(
 void TemplateAnalyzer::fillHelmTemplateHandlers()
 {
   //Order here is important
-
   _helmTemplateHandlers.emplace_back(
     "ConfigMap",
     [this](const std::vector<std::pair<std::string, YAML::Node>>& configmaps_)
@@ -202,102 +202,6 @@ void TemplateAnalyzer::init()
         else
           LOG(info) << "No " << templateHandler.first << " templates found in provided Chart(s)!";
       });
-//    // Process Configuration resources, like ConfigMap and Secret
-//    auto configmapIt = _templateCache.find("ConfigMap");
-//    if (configmapIt == _templateCache.end())
-//      LOG(info) << "No ConfigMap templates found in provided Chart(s)!";
-//    else
-//      processConfigMaps(configmapIt->second);
-//
-//    auto secretIt = _templateCache.find("Secret");
-//    if (secretIt == _templateCache.end())
-//      LOG(info) << "No Secret templates found in provided Chart(s)!";
-//    else
-//      processSecrets(secretIt->second);
-//
-//    // Actual microservice-s stored in Deployments, StatefulSets, DaemonSets, Pods
-//    auto deploymentIt = _templateCache.find("Deployment");
-//    if (deploymentIt == _templateCache.end())
-//      LOG(info) << "No Deployment templates found in provided Chart(s)!";
-//    else
-//      processWorkloads(deploymentIt->second);
-
-//    auto daemonsetIt = _templateCache.find("DaemonSet");
-//    if (daemonsetIt == _templateCache.end())
-//      LOG(debug) << "No DaemonSet templates found in provided Chart(s)!";
-//    else
-//      processWorkloads(daemonsetIt->first, daemonsetIt->second);
-//
-//    auto statefulSetIt = _templateCache.find("StatefulSet");
-//    if (statefulSetIt == _templateCache.end())
-//      LOG(debug) << "No StatefulSet templates found in provided Chart(s)!";
-//    else
-//      processWorkloads(statefulSetIt->first, statefulSetIt->second);
-//
-//    auto podIt = _templateCache.find("Pod");
-//    if (podIt == _templateCache.end())
-//      LOG(debug) << "No Pod templates found in provided Chart(s)!";
-//    else
-//      processWorkloads(podIt->first, podIt->second);
-
-//    auto serviceIt = _templateCache.find("Service");
-//    if (serviceIt == _templateCache.end())
-//      LOG(info) << "No Service templates found in provided Chart(s)!";
-//    else
-//      processServices(serviceIt->second);
-//
-//    auto kafkaTopicIt = _templateCache.find("KafkaTopic");
-//    if (kafkaTopicIt == _templateCache.end())
-//      LOG(debug) << "No KafkaTopic templates found in provided Chart(s)!";
-//    else
-//      processKafkaTopics(kafkaTopicIt->second);
-
-//    std::for_each(_fileAstCache.begin(), _fileAstCache.end(),
-//      [&, this](std::pair<std::string, std::vector<YAML::Node>> pair)
-//      {
-//        std::for_each(pair.second.begin(), pair.second.end(),
-//          [&, this](YAML::Node& node)
-//          {
-//            auto currentService = std::find_if(_microserviceCache.begin(),
-//              _microserviceCache.end(),
-//              [&](model::Microservice& service)
-//              {
-//                return pair.first.find(service.name) != std::string::npos;
-//              });
-//
-//            if (currentService != _microserviceCache.end())
-//              visitKeyValuePairs(pair.first, node, *currentService);
-//          });
-//      });
-//  });
-
-    // Itt valami olyasmi végzés volt, hogy bekerülhettek uj microservice-k amiket lehet elemezni,
-    // ha lesz ilyen a fenti ciklusba akkor ez hasznos lehet még
-
-//    for (const model::Microservice& service : _ctx.db->query<model::Microservice>(
-//      odb::query<model::Microservice>::type == model::Microservice::ServiceType::PRODUCT))
-//    {
-//      _microserviceCache.push_back(service);
-//    }
-//
-//    std::for_each(_fileAstCache.begin(), _fileAstCache.end(),
-//      [&, this](std::pair<std::string, std::vector<YAML::Node>> pair)
-//      {
-//        std::for_each(pair.second.begin(), pair.second.end(),
-//          [&, this](YAML::Node& node)
-//          {
-//            auto currentService = std::find_if(_microserviceCache.begin(),
-//              _microserviceCache.end(),
-//              [&](model::Microservice& service)
-//              {
-//                return service.type == model::Microservice::ServiceType::PRODUCT &&
-//                  pair.first.find("/charts/") == std::string::npos;
-//              });
-//
-//            if (currentService != _microserviceCache.end())
-//              visitKeyValuePairs(pair.first, node, *currentService);
-//          });
-//      });
   });
 }
 
@@ -313,7 +217,7 @@ void TemplateAnalyzer::processTemplateCommonProperties(
     helmTemplate_.file = filePtr->id;
     helmTemplate_.kind = YAML::Dump(currentFile_.second["kind"]);
     helmTemplate_.templateType = _dependencyPairs.at(helmTemplate_.kind);
-    helmTemplate_.depends = findParentChart(currentFile_.first).chartId;
+    helmTemplate_.depends = findParentChart(currentFile_.first);
 
     helmTemplate_.id = model::createIdentifier(helmTemplate_);
   });
@@ -419,9 +323,6 @@ void TemplateAnalyzer::processWorkloads(
             });
         }
 
-        model::Chart dependsOnChart = findParentChart(pair.first);
-        workload->depends = dependsOnChart.chartId;
-
         // save as microservice as well
         std::string microserviceName = workload->name;
         auto microserviceIt = std::find_if(
@@ -444,8 +345,15 @@ void TemplateAnalyzer::processWorkloads(
           _ctx.db->persist(microservice);
           workload->microservice = microservice.microserviceId;
 
-          dependsOnChart.microservice = microservice.microserviceId;
-          _ctx.db->update(dependsOnChart);
+          auto chartIt = std::find_if(_chartCache.begin(), _chartCache.end(), [&](const model::Chart& chart)
+          {
+            return chart.chartId == workload->depends;
+          });
+          if(chartIt != _chartCache.end())
+          {
+            chartIt->microservice = microservice.microserviceId;
+            _ctx.db->update(*chartIt);
+          }
         }
 
         _workloadHandlers.find(workload->kind)->second(workload, pair.second);
@@ -693,11 +601,11 @@ void TemplateAnalyzer::processServices(const std::vector<std::pair<std::string, 
               addEdge(service.id, deploymentIt.id);
             }
           }
-          //TODO: more here...
+          //TODO: add more workloads here...
         }
 
-        model::Chart dependsOnChart = findParentChart(pair.first);
-        service.depends = dependsOnChart.chartId;
+//        model::ChartId dependsOnChart = findParentChart(pair.first);
+//        service.depends = dependsOnChart;
 
         addHelmTemplate(service);
       });
@@ -721,283 +629,6 @@ bool TemplateAnalyzer::isValidTemplate(
          rootNode["metadata"].IsMap() &&
          rootNode["kind"] &&
          rootNode["metadata"]["name"];
-}
-
-bool TemplateAnalyzer::visitKeyValuePairs(
-  std::string path_,
-  YAML::Node& currentNode_,
-  model::Microservice& service_)
-{
-//  typedef model::HelmTemplate::TemplateType DependencyType;
-//
-//  if (!currentNode_["metadata"] ||
-//      !currentNode_["metadata"].IsMap() ||
-//      !currentNode_["kind"] ||
-//      !currentNode_["metadata"]["name"])
-//    return false;
-//
-//  auto typeIter = _dependencyPairs.find(YAML::Dump(currentNode_["kind"]));
-//  auto type = typeIter->second;
-//
-//  if (typeIter == _dependencyPairs.end())
-//  {
-//    if (YAML::Dump(currentNode_["kind"]).find("Certificate") != std::string::npos ||
-//        YAML::Dump(currentNode_["kind"]).find("InternalUserCA") != std::string::npos)
-//    {
-//      type = DependencyType::CERTIFICATE;
-//    }
-//    else
-//    {
-//      auto volumesNode = findKey("volumes", currentNode_);
-//      if (volumesNode.IsDefined())
-//        type = DependencyType::MOUNT;
-//      else
-//        return false;
-//    }
-//  }
-//
-//  switch (type)
-//  {
-//    case DependencyType::SERVICE:
-//      processServiceDeps(path_, currentNode_, service_);
-//      break;
-//    case DependencyType::MOUNT:
-//      processMountDeps(path_, currentNode_, service_);
-//      break;
-//    case DependencyType::CERTIFICATE:
-//      processCertificateDeps(path_, currentNode_, service_);
-//      break;
-//    case DependencyType::KAFKATOPIC:
-//      processKafkaTopicDeps(path_, currentNode_, service_);
-//    case DependencyType::RESOURCE:
-//    case DependencyType::OTHER:
-//      break;
-//  }
-//
-//  processResources(path_, currentNode_, service_);
-//  processStorageResources(path_, currentNode_, service_);
-//
-//  return true;
-}
-
-void TemplateAnalyzer::processServiceDeps(
-  const std::string& path_,
-  YAML::Node& currentFile_,
-  model::Microservice& service_)
-{
-  /* --- Process Service templates --- */
-
-  // Find MS in database.
-//  auto serviceIter = std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
-//    [&](const model::Microservice& service)
-//    {
-//      //LOG(info) << service.name << ", " << YAML::Dump(currentFile_["metadata"]["name"]);;
-//      return service.name == YAML::Dump(currentFile_["metadata"]["name"]);
-//    });
-  //LOG(warning) << "service deps: " << serviceIter->name;
-
-  // Persist template data to db.
-  model::HelmTemplate helmTemplate;// = std::make_shared<model::HelmTemplate>();
-  helmTemplate.templateType = model::HelmTemplate::TemplateType::SERVICE;
-
-  auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == path_);
-  helmTemplate.file = filePtr->id;
-  helmTemplate.kind = YAML::Dump(currentFile_["kind"]);
-  helmTemplate.name = YAML::Dump(currentFile_["metadata"]["name"]);
-  //helmTemplate.depends = service_.microserviceId;
-  helmTemplate.id = createIdentifier(helmTemplate);
-
-  // If the MS is not present in the db,
-  // it is an external / central MS,
-  // and should be added to the db.
-  //LOG(info) << serviceIter->microserviceId << ", " << serviceIter->name;
-//  if (serviceIter == _microserviceCache.end())
-//  {
-//    model::Microservice externalService;
-//    externalService.name = YAML::Dump(currentFile_["metadata"]["name"]);
-//    externalService.type = model::Microservice::ServiceType::CENTRAL;
-//    externalService.file = filePtr->id;
-//    externalService.microserviceId = createIdentifier(externalService);
-//    externalService.version = YAML::Dump(currentFile_["metadata"]["labels"]["app.kubernetes.io\/version"]);
-//    _microserviceCache.push_back(externalService);
-//    _ctx.db->persist(externalService);
-//
-//    helmTemplate.depends = externalService.microserviceId;
-//  }
-//  else
-//  {
-//    helmTemplate.depends = serviceIter->microserviceId;
-//  }
-
-  addHelmTemplate(helmTemplate);
-  //addEdge(service_.microserviceId, helmTemplate.depends, helmTemplate.id, helmTemplate.kind);
-
-//  auto serviceIter = std::find_if(_serviceCache.begin(), _serviceCache.end(),
-//    [&](const model::Service& service)
-//    {
-//      return service.name == YAML::Dump(currentFile_["metadata"]["name"]);
-//    });
-//
-//  if (serviceIter == _serviceCache.end())
-//  {
-//    model::Service service;
-//    service.name = YAML::Dump(currentFile_["metadata"]["name"]);
-//    service.type = YAML::Dump(currentFile_["spec"]["type"]);
-//    if (currentFile_["spec"]["ipFamilyPolicy"] && currentFile_["spec"]["ipFamilyPolicy"].IsScalar())
-//      service.ipFamilyPolicy = YAML::Dump(currentFile_["spec"]["ipFamilyPolicy"]);
-//    else
-//      service.ipFamilyPolicy = "SingleStack";
-//
-//    //service.depends = service_.microserviceId;
-//    //service.helmTemplateId = helmTemplate.id;
-//    //service.serviceId = model::createIdentifier(service);
-//
-//    _serviceCache.push_back(service);
-//    _ctx.db->persist(service);
-//  }
-}
-
-void TemplateAnalyzer::processMountDeps(
-  const std::string& path_,
-  YAML::Node& currentFile_,
-  model::Microservice& service_)
-{
-  /* --- Processing ConfigMap templates --- */
-
-  //auto volumesNode = findKey("volumes", currentFile_);
-  std::vector<YAML::Node> nodes;
-  findKeys("volumes", nodes, currentFile_);
-
-  for (auto volumesNode = nodes.begin(); volumesNode != nodes.end(); ++volumesNode)
-  {
-    if (!volumesNode->IsDefined())
-      return;
-
-    for (auto volume = volumesNode->begin(); volume != volumesNode->end(); ++volume)
-    {
-      if ((*volume)["configMap"] && (*volume)["configMap"]["name"])
-      {
-        model::HelmTemplate helmTemplate;
-        //helmTemplate.templateType = model::HelmTemplate::TemplateType::MOUNT;
-        helmTemplate.kind = "ConfigMap";
-        auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == path_);
-        helmTemplate.file = filePtr->id;
-        helmTemplate.name = YAML::Dump((*volume)["configMap"]["name"]);
-
-        auto serviceIter = std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
-          [&](const model::Microservice &service)
-          {
-            return (YAML::Dump((*volume)["configMap"]["name"])).find(service.name) !=
-                   std::string::npos;
-          });
-
-        if (serviceIter == _microserviceCache.end())
-        {
-          //helmTemplate.depends = -1;
-          helmTemplate.id = createIdentifier(helmTemplate);
-        }
-        else
-        {
-          //helmTemplate.depends = serviceIter->microserviceId;
-          helmTemplate.id = createIdentifier(helmTemplate);
-          //addEdge(service_.microserviceId, helmTemplate.depends, helmTemplate.id, helmTemplate.kind);
-        }
-
-        addHelmTemplate(helmTemplate);
-      }
-      else if ((*volume)["secret"] && (*volume)["secret"]["secretName"])
-      {
-        model::HelmTemplate helmTemplate;
-        //helmTemplate.templateType = model::HelmTemplate::TemplateType::MOUNT;
-        helmTemplate.kind = "Secret";
-        auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == path_);
-        helmTemplate.file = filePtr->id;
-        helmTemplate.name = YAML::Dump((*volume)["secret"]["secretName"]);
-
-        auto serviceIter = std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
-          [&](const model::Microservice &service)
-          {
-            return (YAML::Dump((*volume)["secret"]["secretName"])).find(service.name) !=
-                   std::string::npos;
-          });
-
-        if (serviceIter == _microserviceCache.end())
-        {
-          /*auto dependentServiceIt = std::find_if(_newTemplates.begin(), _newTemplates.end(),
-            [&](const model::HelmTemplate &dependentService)
-            {
-             return (YAML::Dump((*volume)["secret"]["secretName"])).find(service.name) !=
-                    std::string::npos;
-            });*/
-          //helmTemplate.depends = -1;
-          helmTemplate.id = createIdentifier(helmTemplate);
-        }
-        else
-        {
-          //helmTemplate.depends = serviceIter->microserviceId;
-          helmTemplate.id = createIdentifier(helmTemplate);
-          //addEdge(service_.microserviceId, helmTemplate.depends, helmTemplate.id, helmTemplate.kind);
-        }
-
-        addHelmTemplate(helmTemplate);
-      }
-    }
-  }
-}
-
-void TemplateAnalyzer::processCertificateDeps(
-  const std::string& path_,
-  YAML::Node& currentFile_,
-  model::Microservice& service_)
-{
-  model::HelmTemplate helmTemplate;
-  //helmTemplate.templateType = model::HelmTemplate::TemplateType::CERTIFICATE;
-  helmTemplate.kind = YAML::Dump(currentFile_["kind"]);
-  auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::path == path_);
-  helmTemplate.file = filePtr->id;
-  helmTemplate.name = YAML::Dump(currentFile_["metadata"]["name"]);
-
-  auto keyName = findKey("generatedSecretName", currentFile_);
-
-  auto serviceIter = std::find_if(_microserviceCache.begin(), _microserviceCache.end(),
-    [&](const model::Microservice& service)
-    {
-      return (YAML::Dump(keyName)).find(service.name) != std::string::npos;
-    });
-
-  if (serviceIter == _microserviceCache.end())
-  {
-    //helmTemplate.depends = -1;
-    helmTemplate.id = createIdentifier(helmTemplate);
-  }
-  else
-  {
-    //helmTemplate.depends = serviceIter->microserviceId;
-    helmTemplate.id = createIdentifier(helmTemplate);
-    //addEdge(service_.microserviceId, helmTemplate.depends, helmTemplate.id, helmTemplate.kind);
-  }
-
-  addHelmTemplate(helmTemplate);
-
-  model::HelmTemplate secretTemplate;
-  //secretTemplate.templateType = model::HelmTemplate::TemplateType::CERTIFICATE;
-  secretTemplate.kind = "Secret";
-  secretTemplate.file = filePtr->id;
-  secretTemplate.name = YAML::Dump(keyName);
-
-  if (serviceIter == _microserviceCache.end())
-  {
-    //secretTemplate.depends = -1;
-    secretTemplate.id = createIdentifier(secretTemplate);
-  }
-  else
-  {
-    //secretTemplate.depends = serviceIter->microserviceId;
-    secretTemplate.id = createIdentifier(secretTemplate);
-    //addEdge(service_.microserviceId, secretTemplate.depends, secretTemplate.id, secretTemplate.kind);
-  }
-
-  addHelmTemplate(secretTemplate);
 }
 
 void TemplateAnalyzer::processKafkaTopics(
@@ -1092,23 +723,32 @@ void TemplateAnalyzer::processKafkaUsers(const std::vector<std::pair<std::string
   });
 }
 
-model::Chart TemplateAnalyzer::findParentChart(const std::string& templatePath_)
+model::ChartId TemplateAnalyzer::findParentChart(const std::string& templatePath_)
 {
-  size_t max_index = std::string::npos;
-  model::Chart parentChart;
+  fs::path path(templatePath_);
+  model::ChartId parentChart = 0;
 
-  for (const auto& chart : _chartCache)
-  {
-    size_t pos;
-    if(chart.alias.empty())
-      pos = templatePath_.rfind(chart.name);
-    else
-      pos = templatePath_.rfind(chart.alias);
-    if (pos != std::string::npos && (max_index == std::string::npos || pos > max_index))
-    {
-      max_index = pos;
-      parentChart = chart;
+  while (!path.empty()) {
+    fs::path chartYaml1 = path / "Chart.yaml";
+    fs::path chartYaml2 = path / "Chart.yml";
+
+    if (fs::exists(chartYaml1) || fs::exists(chartYaml2)) {
+      auto chartIt = std::find_if(
+        _chartCache.begin(),
+        _chartCache.end(),
+        [&](const model::Chart& chart)
+        {
+            auto filePtr = _ctx.db->query_one<model::File>(odb::query<model::File>::id == chart.file);
+            return filePtr->path == chartYaml1.string() || filePtr->path == chartYaml2.string();
+        });
+
+      if(chartIt != _chartCache.end())
+      {
+        parentChart = chartIt->chartId;
+        break;
+      }
     }
+    path = path.parent_path();
   }
 
   return parentChart;
@@ -1289,18 +929,11 @@ std::vector<YAML::Node> TemplateAnalyzer::findKeys(
       if (node_[key_])
       {
         nodes_.push_back(node_[key_]);
-        //return findKeys(key_, nodes_, node_);
-        //return nodes_;
       }
       else
         for (auto iter = node_.begin(); iter != node_.end(); ++iter)
         {
           findKeys(key_, nodes_, iter->second);
-          //if (temp.IsDefined())
-          //{
-            //nodes_.push_back(temp);
-            //return nodes_;
-          //}
         }
       break;
   }
